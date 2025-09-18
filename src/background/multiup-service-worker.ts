@@ -53,14 +53,22 @@ class MultiUpService {
 // Use webRequest for instant MultiUp redirection
 chrome.webRequest.onBeforeRequest.addListener(
   (details) => {
-    const url = details.url;
-    
-    // Check if URL has MultiUp ID and get destination page
-    const multiUpUrl = MultiUpService.process(url);
-    if (multiUpUrl) {
-      console.log('MultiUp ID detected, redirecting from:', url);
-      console.log('Redirecting to:', multiUpUrl);
-      chrome.tabs.update(details.tabId, { url: multiUpUrl });
+    try {
+      const url = details.url;
+      
+      // Check if URL has MultiUp ID and get destination page
+      const multiUpUrl = MultiUpService.process(url);
+      if (multiUpUrl) {
+        console.log('MultiUp ID detected, redirecting from:', url);
+        console.log('Redirecting to:', multiUpUrl);
+        
+        // Add error handling for tab update
+        chrome.tabs.update(details.tabId, { url: multiUpUrl }).catch((error) => {
+          console.error('Failed to update tab for MultiUp redirect:', error);
+        });
+      }
+    } catch (error) {
+      console.error('Error in MultiUp webRequest handler:', error);
     }
   },
   {

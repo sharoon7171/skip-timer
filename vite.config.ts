@@ -26,8 +26,7 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        'service-worker': resolve(__dirname, 'src/background/service-worker.ts'),
-        'content-scripts/main-content-script': resolve(__dirname, 'src/content-scripts/main-content-script.ts')
+        'service-worker': resolve(__dirname, 'src/background/service-worker.ts')
       },
       output: {
         entryFileNames: '[name].js',
@@ -50,11 +49,6 @@ export default defineConfig({
       }
     },
     target: 'es2020'
-  },
-  resolve: {
-    alias: {
-      '@': resolve(__dirname, 'src')
-    }
   },
   define: {
     'process.env.NODE_ENV': '"production"'
