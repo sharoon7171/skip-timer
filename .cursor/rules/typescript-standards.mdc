@@ -1,0 +1,562 @@
+---
+description: Modern TypeScript Standards for Chrome Extensions - Type Safety, Vite Integration, September 2025
+globs:
+- "**/*.ts"
+- "**/*.tsx"
+- "**/*.mts"
+- "**/tsconfig.*"
+- "**/types/**"
+- "**/interfaces/**"
+alwaysApply: true
+priority: high
+---
+
+# Modern TypeScript Standards for Chrome Extensions
+
+## TypeScript Configuration Requirements
+- **Strict Mode** - Enable all strict type checking options for .ts/.tsx files
+- **ES2024+ Target** - Use latest ECMAScript features
+- **Module Resolution** - Node16 or Bundler for Vite compatibility
+- **Type Definitions** - Complete type coverage for Chrome extension APIs
+- **Path Mapping** - Use path aliases for clean imports
+- **File Type Scope** - Apply TypeScript rules only to .ts/.tsx files, not HTML/CSS/JSON
+
+## Essential TypeScript Configuration
+```json
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "noImplicitOverride": true,
+    "exactOptionalPropertyTypes": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noUncheckedIndexedAccess": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/types/*": ["./src/types/*"],
+      "@/components/*": ["./src/components/*"],
+      "@/utils/*": ["./src/utils/*"],
+      "@/services/*": ["./src/services/*"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
+```
+
+## Chrome Extension Type Definitions
+
+### Core Chrome API Types
+```typescript
+// types/chrome-api.types.ts
+export interface MessageRequest {
+  action: string;
+  data?: unknown;
+  timestamp: number;
+  sender: 'popup' | 'content-script' | 'background' | 'options';
+}
+
+export interface MessageResponse<T = unknown> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  timestamp: number;
+}
+
+export interface StorageData {
+  [key: string]: unknown;
+}
+
+export interface TabInfo {
+  id: number;
+  url: string;
+  title: string;
+  active: boolean;
+}
+
+export interface ExtensionConfig {
+  version: string;
+  permissions: string[];
+  hostPermissions: string[];
+}
+```
+
+### Service Worker Types
+```typescript
+// types/service-worker.types.ts
+export interface ServiceWorkerContext {
+  installEvent?: InstallEvent;
+  activateEvent?: ActivateEvent;
+  messageEvent?: MessageEvent;
+}
+
+export interface BackgroundMessageHandler {
+  (request: MessageRequest, sender: chrome.runtime.MessageSender): Promise<MessageResponse>;
+}
+
+export interface ServiceWorkerLifecycle {
+  onInstall: (event: InstallEvent) => void;
+  onActivate: (event: ActivateEvent) => void;
+  onMessage: BackgroundMessageHandler;
+}
+```
+
+### Content Script Types
+```typescript
+// types/content-script.types.ts
+export interface ContentScriptConfig {
+  matches: string[];
+  excludeMatches?: string[];
+  runAt: 'document_start' | 'document_end' | 'document_idle';
+  allFrames?: boolean;
+  matchAboutBlank?: boolean;
+}
+
+export interface DOMElement {
+  element: HTMLElement;
+  selector: string;
+  attributes: Record<string, string>;
+}
+
+export interface ContentScriptMessage {
+  type: 'DOM_READY' | 'ELEMENT_FOUND' | 'USER_ACTION' | 'ERROR';
+  data: unknown;
+  timestamp: number;
+}
+```
+
+## TypeScript Best Practices
+
+### 1. Strict Type Safety
+```typescript
+// ✅ Use strict typing
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  preferences: UserPreferences;
+}
+
+interface UserPreferences {
+  theme: 'light' | 'dark';
+  notifications: boolean;
+  language: string;
+}
+
+// ✅ Use type guards
+function isUser(obj: unknown): obj is User {
+  return (
+    typeof obj === 'object' &&
+    obj !== null &&
+    'id' in obj &&
+    'name' in obj &&
+    'email' in obj
+  );
+}
+
+// ✅ Use discriminated unions
+type LoadingState = 
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'success'; data: unknown }
+  | { status: 'error'; error: string };
+```
+
+### 2. Generic Types and Utility Types
+```typescript
+// ✅ Use generics for reusable types
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  error?: string;
+}
+
+interface PaginatedResponse<T> {
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+  };
+}
+
+// ✅ Use utility types
+type PartialUser = Partial<User>;
+type RequiredUser = Required<User>;
+type UserEmail = Pick<User, 'email'>;
+type UserWithoutId = Omit<User, 'id'>;
+```
+
+### 3. Error Handling with Types
+```typescript
+// ✅ Typed error classes
+class ExtensionError extends Error {
+  constructor(
+    message: string,
+    public code: string,
+    public originalError?: Error
+  ) {
+    super(message);
+    this.name = 'ExtensionError';
+  }
+}
+
+class StorageError extends ExtensionError {
+  constructor(message: string, originalError?: Error) {
+    super(message, 'STORAGE_ERROR', originalError);
+    this.name = 'StorageError';
+  }
+}
+
+// ✅ Result type for error handling
+type Result<T, E = Error> = 
+  | { success: true; data: T }
+  | { success: false; error: E };
+
+async function safeStorageGet<T>(key: string): Promise<Result<T>> {
+  try {
+    const result = await chrome.storage.sync.get([key]);
+    return { success: true, data: result[key] as T };
+  } catch (error) {
+    return { 
+      success: false, 
+      error: new StorageError('Failed to get storage data', error as Error) 
+    };
+  }
+}
+```
+
+### 4. Chrome Extension Specific Patterns
+```typescript
+// ✅ Typed message handling
+class TypedMessageHandler {
+  private handlers = new Map<string, BackgroundMessageHandler>();
+
+  register<T = unknown>(
+    action: string, 
+    handler: (data: T, sender: chrome.runtime.MessageSender) => Promise<MessageResponse>
+  ): void {
+    this.handlers.set(action, async (request, sender) => {
+      try {
+        return await handler(request.data as T, sender);
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          timestamp: Date.now()
+        };
+      }
+    });
+  }
+
+  async handleMessage(
+    request: MessageRequest, 
+    sender: chrome.runtime.MessageSender
+  ): Promise<MessageResponse> {
+    const handler = this.handlers.get(request.action);
+    if (!handler) {
+      return {
+        success: false,
+        error: `Unknown action: ${request.action}`,
+        timestamp: Date.now()
+      };
+    }
+    return handler(request, sender);
+  }
+}
+```
+
+### 5. Vite Integration Patterns
+```typescript
+// ✅ Environment variables with types
+interface ImportMetaEnv {
+  readonly VITE_APP_NAME: string;
+  readonly VITE_APP_VERSION: string;
+  readonly VITE_API_URL: string;
+  readonly VITE_DEBUG: boolean;
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}
+
+// ✅ Dynamic imports with types
+async function loadComponent<T>(
+  componentPath: string
+): Promise<{ default: T }> {
+  const module = await import(componentPath);
+  return module as { default: T };
+}
+
+// ✅ Vite asset imports
+import type { ComponentType } from 'react';
+import iconUrl from '@/assets/icon.svg?url';
+import iconComponent from '@/assets/icon.svg?react';
+```
+
+## TypeScript Performance Patterns
+
+### 1. Lazy Loading with Types
+```typescript
+// ✅ Lazy component loading
+const LazyComponent = lazy(() => 
+  import('./LazyComponent').then(module => ({
+    default: module.LazyComponent
+  }))
+);
+
+// ✅ Conditional loading
+async function loadFeature<T>(
+  featureName: string,
+  condition: boolean
+): Promise<T | null> {
+  if (!condition) return null;
+  
+  const module = await import(`@/features/${featureName}`);
+  return module.default as T;
+}
+```
+
+### 2. Memory Management
+```typescript
+// ✅ WeakMap for cleanup
+class EventManager {
+  private listeners = new WeakMap<HTMLElement, EventListener[]>();
+  
+  addListener(element: HTMLElement, event: string, handler: EventListener): void {
+    if (!this.listeners.has(element)) {
+      this.listeners.set(element, []);
+    }
+    this.listeners.get(element)!.push(handler);
+    element.addEventListener(event, handler);
+  }
+  
+  removeAllListeners(element: HTMLElement): void {
+    const handlers = this.listeners.get(element);
+    if (handlers) {
+      handlers.forEach(handler => {
+        element.removeEventListener('click', handler);
+      });
+      this.listeners.delete(element);
+    }
+  }
+}
+```
+
+### 3. Async Patterns
+```typescript
+// ✅ Promise utilities with types
+class PromiseUtils {
+  static async retry<T>(
+    fn: () => Promise<T>,
+    maxAttempts: number = 3,
+    delay: number = 1000
+  ): Promise<T> {
+    let lastError: Error;
+    
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        return await fn();
+      } catch (error) {
+        lastError = error as Error;
+        if (attempt === maxAttempts) throw lastError;
+        await new Promise(resolve => setTimeout(resolve, delay * attempt));
+      }
+    }
+    
+    throw lastError!;
+  }
+  
+  static async timeout<T>(
+    promise: Promise<T>,
+    ms: number
+  ): Promise<T> {
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('Operation timed out')), ms);
+    });
+    
+    return Promise.race([promise, timeoutPromise]);
+  }
+}
+```
+
+## TypeScript Testing Patterns
+
+### 1. Mock Types
+```typescript
+// ✅ Typed mocks
+interface MockChromeAPI {
+  storage: {
+    sync: {
+      get: jest.MockedFunction<typeof chrome.storage.sync.get>;
+      set: jest.MockedFunction<typeof chrome.storage.sync.set>;
+    };
+  };
+  runtime: {
+    sendMessage: jest.MockedFunction<typeof chrome.runtime.sendMessage>;
+    onMessage: {
+      addListener: jest.MockedFunction<typeof chrome.runtime.onMessage.addListener>;
+    };
+  };
+}
+
+const mockChrome: MockChromeAPI = {
+  storage: {
+    sync: {
+      get: jest.fn(),
+      set: jest.fn()
+    }
+  },
+  runtime: {
+    sendMessage: jest.fn(),
+    onMessage: {
+      addListener: jest.fn()
+    }
+  }
+};
+```
+
+### 2. Test Utilities
+```typescript
+// ✅ Test helper types
+interface TestContext {
+  mockChrome: MockChromeAPI;
+  cleanup: () => void;
+}
+
+function createTestContext(): TestContext {
+  const mockChrome = createMockChromeAPI();
+  
+  return {
+    mockChrome,
+    cleanup: () => {
+      jest.clearAllMocks();
+    }
+  };
+}
+```
+
+## TypeScript Integration with Vite
+
+### 1. Build Configuration
+**See @vite-build-standards** - for comprehensive Vite configuration with TypeScript
+```typescript
+// vite.config.ts
+import { defineConfig } from 'vite';
+import { resolve } from 'path';
+
+export default defineConfig({
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, 'src'),
+      '@/types': resolve(__dirname, 'src/types'),
+      '@/components': resolve(__dirname, 'src/components'),
+      '@/utils': resolve(__dirname, 'src/utils'),
+      '@/services': resolve(__dirname, 'src/services')
+    }
+  },
+  build: {
+    rollupOptions: {
+      input: {
+        popup: resolve(__dirname, 'src/popup/index.html'),
+        options: resolve(__dirname, 'src/options/index.html'),
+        background: resolve(__dirname, 'src/background/background.ts'),
+        content: resolve(__dirname, 'src/content/content.ts')
+      },
+      output: {
+        entryFileNames: '[name].js',
+        chunkFileNames: '[name].js',
+        assetFileNames: '[name].[ext]'
+      }
+    }
+  }
+});
+```
+
+### 2. Type-Only Imports
+```typescript
+// ✅ Use type-only imports for better performance
+import type { MessageRequest, MessageResponse } from '@/types/chrome-api.types';
+import type { ComponentProps } from 'react';
+
+// ✅ Re-export types for convenience
+export type { MessageRequest, MessageResponse } from '@/types/chrome-api.types';
+export type { User, UserPreferences } from '@/types/user.types';
+```
+
+## TypeScript Code Quality Standards
+
+### 1. Documentation
+```typescript
+/**
+ * Handles Chrome extension messaging with full type safety
+ * @template TRequest - Type of the request data
+ * @template TResponse - Type of the response data
+ */
+class TypedMessaging<TRequest = unknown, TResponse = unknown> {
+  /**
+   * Sends a typed message to the background script
+   * @param action - The action to perform
+   * @param data - The request data
+   * @returns Promise resolving to typed response
+   */
+  async sendMessage(
+    action: string, 
+    data: TRequest
+  ): Promise<MessageResponse<TResponse>> {
+    // Implementation
+  }
+}
+```
+
+### 2. ESLint Configuration
+```json
+{
+  "extends": [
+    "@typescript-eslint/recommended",
+    "@typescript-eslint/recommended-requiring-type-checking"
+  ],
+  "rules": {
+    "@typescript-eslint/no-unused-vars": "error",
+    "@typescript-eslint/no-explicit-any": "warn",
+    "@typescript-eslint/prefer-nullish-coalescing": "error",
+    "@typescript-eslint/prefer-optional-chain": "error",
+    "@typescript-eslint/no-non-null-assertion": "warn"
+  }
+}
+```
+
+## TypeScript Migration Checklist
+
+### Pre-Migration
+- [ ] Install TypeScript and related dependencies
+- [ ] Configure tsconfig.json with strict settings
+- [ ] Set up path mapping for clean imports
+- [ ] Install Chrome extension type definitions
+
+### During Migration
+- [ ] Convert .js files to .ts files incrementally
+- [ ] Add type annotations to all functions
+- [ ] Define interfaces for all data structures
+- [ ] Update imports to use type-only imports where appropriate
+- [ ] Add error handling with typed error classes
+
+### Post-Migration
+- [ ] Enable strict type checking
+- [ ] Set up ESLint with TypeScript rules
+- [ ] Add comprehensive type tests
+- [ ] Document all public APIs with JSDoc
+- [ ] Optimize build configuration for TypeScript

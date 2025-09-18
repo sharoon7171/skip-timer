@@ -1,0 +1,666 @@
+---
+description: Modern HTML5 + Tailwind CSS Standards for Chrome Extension UI - September 2025
+globs:
+- "**/*.html"
+- "**/*.tsx"
+- "**/*.jsx"
+- "**/*.css"
+- "**/popup/**"
+- "**/options/**"
+- "**/styles/**"
+- "**/tailwind.config.*"
+- "**/postcss.config.*"
+alwaysApply: true
+priority: high
+---
+
+# Modern HTML5 + Tailwind CSS Standards for Chrome Extension UI
+
+## File Type Usage
+- **HTML Files (.html)** - Use for page structure, layout, and semantic markup
+- **CSS Files (.css)** - Use for styling with Tailwind CSS utilities
+- **React Files (.tsx)** - Use for React components with TypeScript
+- **TypeScript Files (.ts)** - Use for functions, utilities, and business logic
+
+## HTML5 + Tailwind CSS Document Structure
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Extension Name</title>
+  
+  <!-- Tailwind CSS via Vite -->
+  <link rel="stylesheet" href="/src/styles/main.css">
+  
+  <!-- Preload critical resources -->
+  <link rel="preload" href="/src/main.ts" as="script">
+  <link rel="preload" href="/src/styles/main.css" as="style">
+</head>
+<body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+  <!-- Semantic HTML structure with Tailwind classes -->
+  <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+    <h1 class="sr-only">Extension Controls</h1>
+  </header>
+  
+  <main class="p-4 min-h-screen">
+    <!-- Content here -->
+  </main>
+  
+  <footer class="bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+    <!-- Footer content -->
+  </footer>
+  
+  <!-- Vite TypeScript entry point -->
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
+```
+
+## Semantic HTML + Tailwind CSS Requirements
+- **Always use semantic elements**: `<header>`, `<main>`, `<section>`, `<article>`, `<nav>`, `<aside>`, `<footer>`
+- **Proper heading hierarchy**: h1 → h2 → h3, no skipping levels
+- **Meaningful alt text** for all images
+- **Form labels** properly associated with inputs
+- **Button vs link usage**: buttons for actions, links for navigation
+- **Tailwind utility classes** for all styling needs
+- **Responsive design** with Tailwind's responsive prefixes
+
+## Tailwind CSS Configuration & Setup
+
+### Tailwind Configuration
+```javascript
+// tailwind.config.js
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        primary: {
+          50: '#eff6ff',
+          500: '#3b82f6',
+          600: '#2563eb',
+          700: '#1d4ed8',
+        },
+        gray: {
+          50: '#f9fafb',
+          100: '#f3f4f6',
+          900: '#111827',
+        }
+      },
+      fontFamily: {
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+      },
+      spacing: {
+        '18': '4.5rem',
+        '88': '22rem',
+      }
+    },
+  },
+  plugins: [
+    '@tailwindcss/forms',
+    '@tailwindcss/typography',
+  ],
+  darkMode: 'class',
+}
+```
+
+### Main CSS File
+```css
+/* src/styles/main.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom component classes */
+@layer components {
+  .btn-primary {
+    @apply bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-200 hover:bg-gray-300 text-gray-900 font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+  }
+  
+  .card {
+    @apply bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6;
+  }
+  
+  .input-field {
+    @apply w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white;
+  }
+}
+
+/* Custom utilities */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+```
+
+## Tailwind CSS Layout Patterns
+
+### Grid Layouts
+```html
+<!-- ✅ CSS Grid with Tailwind -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+  <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+    <!-- Grid item content -->
+  </div>
+</div>
+
+<!-- ✅ Complex Grid Layout -->
+<div class="grid grid-areas-[header_header;sidebar_main;footer_footer] grid-cols-[200px_1fr] grid-rows-[auto_1fr_auto] min-h-screen gap-4">
+  <header class="grid-area-header bg-white dark:bg-gray-800 shadow-sm">Header</header>
+  <aside class="grid-area-sidebar bg-gray-50 dark:bg-gray-700">Sidebar</aside>
+  <main class="grid-area-main p-4">Main Content</main>
+  <footer class="grid-area-footer bg-gray-100 dark:bg-gray-800">Footer</footer>
+</div>
+```
+
+### Flexbox Layouts
+```html
+<!-- ✅ Flexbox with Tailwind -->
+<div class="flex flex-col sm:flex-row gap-4 items-center justify-center">
+  <button class="btn-primary">Primary Action</button>
+  <button class="btn-secondary">Secondary Action</button>
+</div>
+
+<!-- ✅ Card Layout -->
+<div class="card">
+  <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Card Title</h3>
+  <p class="text-gray-600 dark:text-gray-300 mb-4">Card description</p>
+  <div class="flex gap-2">
+    <button class="btn-primary">Action</button>
+    <button class="btn-secondary">Cancel</button>
+  </div>
+</div>
+```
+
+## Chrome Extension Specific UI Patterns
+
+### Popup Window Styling
+```html
+<!-- ✅ Popup Window with Tailwind -->
+<div class="w-96 min-h-[500px] p-4 font-sans text-sm leading-relaxed bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+  <header class="mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+    <h1 class="text-lg font-semibold">Extension Title</h1>
+  </header>
+  
+  <main class="space-y-4">
+    <!-- Popup content -->
+  </main>
+  
+  <footer class="mt-4 pt-2 border-t border-gray-200 dark:border-gray-700">
+    <!-- Footer content -->
+  </footer>
+</div>
+```
+
+### Content Script Overlay
+```html
+<!-- ✅ Content Script Overlay with Tailwind -->
+<div class="fixed top-5 right-5 z-[999999] bg-white dark:bg-gray-800 rounded-lg shadow-xl p-4 max-w-sm border border-gray-200 dark:border-gray-700">
+  <div class="flex items-center justify-between mb-2">
+    <h3 class="text-sm font-medium text-gray-900 dark:text-white">Extension Overlay</h3>
+    <button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+      </svg>
+    </button>
+  </div>
+  <p class="text-sm text-gray-600 dark:text-gray-300">Overlay content here</p>
+</div>
+```
+
+### Options Page Layout
+```html
+<!-- ✅ Options Page with Tailwind -->
+<div class="max-w-4xl mx-auto my-8 p-8">
+  <div class="space-y-8">
+    <section class="space-y-4">
+      <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Settings</h2>
+      <div class="space-y-4">
+        <!-- Settings content -->
+      </div>
+    </section>
+  </div>
+</div>
+```
+
+## Tailwind CSS Component Patterns
+
+### Button Components
+```html
+<!-- ✅ Primary Button with Tailwind -->
+<button class="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:opacity-60 disabled:cursor-not-allowed text-white font-medium py-3 px-6 rounded-lg transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 disabled:transform-none">
+  Primary Action
+</button>
+
+<!-- ✅ Secondary Button -->
+<button class="bg-gray-200 hover:bg-gray-300 active:bg-gray-400 disabled:opacity-60 disabled:cursor-not-allowed text-gray-900 font-medium py-3 px-6 rounded-lg transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 disabled:transform-none">
+  Secondary Action
+</button>
+
+<!-- ✅ Icon Button -->
+<button class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200">
+  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+  </svg>
+</button>
+```
+
+### Form Components
+```html
+<!-- ✅ Input Field with Validation States -->
+<div class="space-y-2">
+  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+    Email Address
+  </label>
+  <input 
+    type="email" 
+    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white invalid:border-red-500 invalid:ring-red-500"
+    placeholder="Enter your email"
+  />
+  <p class="text-sm text-red-600 dark:text-red-400">Please enter a valid email address</p>
+</div>
+
+<!-- ✅ Select Dropdown -->
+<div class="space-y-2">
+  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+    Country
+  </label>
+  <select class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+    <option>Select a country</option>
+    <option>United States</option>
+    <option>Canada</option>
+    <option>United Kingdom</option>
+  </select>
+</div>
+
+<!-- ✅ Checkbox -->
+<div class="flex items-center space-x-2">
+  <input 
+    type="checkbox" 
+    id="terms" 
+    class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+  />
+  <label for="terms" class="text-sm text-gray-700 dark:text-gray-300">
+    I agree to the terms and conditions
+  </label>
+</div>
+```
+
+### Card Components
+```html
+<!-- ✅ Basic Card -->
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+  <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Card Title</h3>
+  <p class="text-gray-600 dark:text-gray-300 mb-4">Card description goes here</p>
+  <div class="flex gap-2">
+    <button class="btn-primary">Action</button>
+    <button class="btn-secondary">Cancel</button>
+  </div>
+</div>
+
+<!-- ✅ Interactive Card with Hover Effects -->
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow duration-200 cursor-pointer">
+  <div class="flex items-center justify-between mb-2">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Interactive Card</h3>
+    <span class="text-sm text-gray-500 dark:text-gray-400">2 min ago</span>
+  </div>
+  <p class="text-gray-600 dark:text-gray-300">This card has hover effects and is clickable</p>
+</div>
+```
+
+## Responsive Design with Tailwind CSS
+
+### Mobile-First Responsive Patterns
+```html
+<!-- ✅ Mobile-First Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+  <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+    <!-- Responsive grid item -->
+  </div>
+</div>
+
+<!-- ✅ Responsive Typography -->
+<h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white">
+  Responsive Heading
+</h1>
+
+<!-- ✅ Responsive Spacing -->
+<div class="p-4 sm:p-6 md:p-8 lg:p-10">
+  <div class="space-y-4 sm:space-y-6 md:space-y-8">
+    <!-- Content with responsive spacing -->
+  </div>
+</div>
+```
+
+### Dark Mode Support
+```html
+<!-- ✅ Dark Mode Toggle -->
+<button 
+  id="theme-toggle"
+  class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+>
+  <!-- Sun icon for dark mode -->
+  <svg class="w-5 h-5 dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+  </svg>
+  <!-- Moon icon for light mode -->
+  <svg class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+  </svg>
+</button>
+```
+
+### Animation and Transitions
+```html
+<!-- ✅ Loading States -->
+<div class="animate-pulse">
+  <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
+  <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+</div>
+
+<!-- ✅ Fade In Animation -->
+<div class="opacity-0 animate-fade-in">
+  <p class="text-gray-600 dark:text-gray-300">This content fades in</p>
+</div>
+
+<!-- ✅ Slide In Animation -->
+<div class="transform -translate-x-full animate-slide-in">
+  <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+    <p class="text-gray-900 dark:text-white">This slides in from the left</p>
+  </div>
+</div>
+```
+
+## Accessibility Standards with Tailwind CSS
+
+### Focus Management
+```html
+<!-- ✅ Focus-visible styles -->
+<button class="focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
+  Accessible Button
+</button>
+
+<!-- ✅ Skip Links -->
+<a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-blue-600 text-white px-4 py-2 rounded-md z-50">
+  Skip to main content
+</a>
+
+<!-- ✅ Screen Reader Only Content -->
+<span class="sr-only">This text is only visible to screen readers</span>
+```
+
+### High Contrast Support
+```html
+<!-- ✅ High contrast mode support -->
+<div class="border-2 border-transparent focus-within:border-current">
+  <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+</div>
+```
+
+### Form Accessibility
+```html
+<!-- ✅ Properly labeled form fields -->
+<div class="space-y-2">
+  <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+    Email Address
+    <span class="text-red-500" aria-label="required">*</span>
+  </label>
+  <input 
+    type="email" 
+    id="email"
+    name="email"
+    required
+    aria-describedby="email-error"
+    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+  />
+  <p id="email-error" class="text-sm text-red-600 dark:text-red-400" role="alert">
+    Please enter a valid email address
+  </p>
+</div>
+```
+
+## Tailwind CSS Performance Optimizations
+
+### Build Optimization
+```javascript
+// tailwind.config.js - Optimized for Chrome Extensions
+export default {
+  content: [
+    "./src/**/*.{js,ts,jsx,tsx}",
+    "./index.html"
+  ],
+  // Purge unused styles in production
+  purge: {
+    enabled: process.env.NODE_ENV === 'production',
+    content: ['./src/**/*.{js,ts,jsx,tsx}'],
+    options: {
+      safelist: [
+        // Keep dynamic classes that might be missed
+        'dark',
+        'light',
+        /^animate-/,
+        /^transition-/
+      ]
+    }
+  },
+  theme: {
+    extend: {
+      // Custom animations for Chrome extensions
+      animation: {
+        'fade-in': 'fadeIn 0.3s ease-out',
+        'slide-in': 'slideIn 0.3s ease-out',
+        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+      },
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0', transform: 'translateY(10px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' }
+        },
+        slideIn: {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(0)' }
+        }
+      }
+    }
+  },
+  plugins: [
+    '@tailwindcss/forms',
+    '@tailwindcss/typography',
+    // Custom plugin for Chrome extension utilities
+    function({ addUtilities }) {
+      addUtilities({
+        '.chrome-safe': {
+          'all': 'initial',
+          'font-family': 'system-ui, -apple-system, sans-serif',
+          'font-size': '14px',
+          'color': 'inherit'
+        }
+      })
+    }
+  ]
+}
+```
+
+### CSS Layer Organization
+```css
+/* src/styles/main.css - Optimized structure */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Chrome Extension specific base styles */
+@layer base {
+  /* Reset for content script injection */
+  .chrome-extension-overlay {
+    @apply chrome-safe;
+  }
+  
+  /* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  :root {
+      color-scheme: dark;
+    }
+  }
+}
+
+/* Reusable component classes */
+@layer components {
+  .btn-primary {
+    @apply bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:opacity-60 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-200 hover:bg-gray-300 active:bg-gray-400 disabled:opacity-60 disabled:cursor-not-allowed text-gray-900 font-medium py-2 px-4 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2;
+  }
+  
+  .input-field {
+    @apply w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white transition-colors duration-200;
+  }
+  
+  .card {
+    @apply bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6;
+  }
+}
+
+/* Custom utilities for Chrome extensions */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  .chrome-popup {
+    @apply w-96 min-h-[500px] max-h-[600px] overflow-y-auto;
+  }
+  
+  .chrome-overlay {
+    @apply fixed top-4 right-4 z-[999999] max-w-sm;
+  }
+}
+```
+
+## Tailwind CSS Best Practices for Chrome Extensions
+
+### 1. Component Organization
+```typescript
+// components/ui/Button.tsx
+interface ButtonProps {
+  variant?: 'primary' | 'secondary' | 'danger';
+  size?: 'sm' | 'md' | 'lg';
+  children: React.ReactNode;
+  onClick?: () => void;
+  disabled?: boolean;
+}
+
+export const Button: React.FC<ButtonProps> = ({ 
+  variant = 'primary', 
+  size = 'md', 
+  children, 
+  onClick,
+  disabled = false 
+}) => {
+  const baseClasses = 'font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2';
+  
+  const variantClasses = {
+    primary: 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white focus:ring-blue-500 disabled:opacity-60',
+    secondary: 'bg-gray-200 hover:bg-gray-300 active:bg-gray-400 text-gray-900 focus:ring-gray-500 disabled:opacity-60',
+    danger: 'bg-red-600 hover:bg-red-700 active:bg-red-800 text-white focus:ring-red-500 disabled:opacity-60'
+  };
+  
+  const sizeClasses = {
+    sm: 'py-1.5 px-3 text-sm',
+    md: 'py-2 px-4 text-base',
+    lg: 'py-3 px-6 text-lg'
+  };
+  
+  return (
+    <button
+      className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+      onClick={onClick}
+      disabled={disabled}
+    >
+      {children}
+    </button>
+  );
+};
+```
+
+### 2. Responsive Design Patterns
+```html
+<!-- ✅ Mobile-first responsive design -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Card Title</h3>
+    <p class="text-gray-600 dark:text-gray-300 text-sm sm:text-base">Responsive content</p>
+  </div>
+</div>
+
+<!-- ✅ Responsive typography -->
+<h1 class="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white">
+  Responsive Heading
+</h1>
+```
+
+### 3. Dark Mode Implementation
+```typescript
+// hooks/useTheme.ts
+import { useState, useEffect } from 'react';
+
+export const useTheme = () => {
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    const initialTheme = savedTheme || (prefersDark ? 'dark' : 'light');
+    setTheme(initialTheme);
+    
+    if (initialTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, []);
+  
+  const toggleTheme = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+    
+    if (newTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  };
+  
+  return { theme, toggleTheme };
+};
+```
+
+## Performance Checklist for Tailwind CSS
+
+### Build Optimization
+- [ ] Configure Tailwind purge for production builds
+- [ ] Use safelist for dynamic classes
+- [ ] Minimize custom CSS in favor of utilities
+- [ ] Use Tailwind's built-in animations
+- [ ] Optimize for Chrome extension bundle size
+
+### Runtime Performance
+- [ ] Use CSS custom properties for dynamic values
+- [ ] Minimize class name concatenation
+- [ ] Use Tailwind's responsive prefixes efficiently
+- [ ] Avoid deep nesting of utility classes
+- [ ] Use Tailwind's built-in focus and hover states

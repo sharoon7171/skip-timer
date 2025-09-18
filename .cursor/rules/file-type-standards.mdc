@@ -1,0 +1,169 @@
+---
+description: File Type Standards for Chrome Extensions - Proper file extensions for different purposes
+globs:
+- "**/*.html"
+- "**/*.css"
+- "**/*.ts"
+- "**/*.tsx"
+- "**/*.js"
+- "**/*.json"
+- "**/*.md"
+alwaysApply: true
+priority: critical
+---
+
+# File Type Standards for Chrome Extensions
+
+## File Type Guidelines
+
+### HTML Files (.html)
+- **Purpose**: Page structure, layout, and semantic markup
+- **Usage**: Popup pages, options pages, welcome pages, content script overlays
+- **Content**: HTML5 semantic elements, Tailwind CSS classes, script tags
+- **Examples**: `popup.html`, `options.html`, `welcome.html`
+
+### CSS Files (.css)
+- **Purpose**: Styling, Tailwind CSS utilities, custom styles
+- **Usage**: Component styles, page-specific styles, Tailwind configuration
+- **Content**: Tailwind utilities, custom CSS, component classes
+- **Examples**: `main.css`, `popup.css`, `options.css`
+
+### TypeScript Files (.ts)
+- **Purpose**: Functions, utilities, services, business logic
+- **Usage**: Background scripts, content scripts, utilities, services
+- **Content**: TypeScript code with type annotations, Chrome API calls
+- **Examples**: `service-worker.ts`, `content-script.ts`, `utils.ts`
+
+### React TypeScript Files (.tsx)
+- **Purpose**: React components with TypeScript
+- **Usage**: UI components, page components, React-based features
+- **Content**: React components with TypeScript props and state
+- **Examples**: `Button.tsx`, `Popup.tsx`, `Options.tsx`
+
+### JavaScript Files (.js)
+- **Purpose**: Configuration files, build scripts
+- **Usage**: Vite config, Tailwind config, build scripts
+- **Content**: JavaScript configuration and build logic
+- **Examples**: `vite.config.js`, `tailwind.config.js`
+
+### JSON Files (.json)
+- **Purpose**: Configuration, data, metadata
+- **Usage**: Package configuration, extension manifest, data storage
+- **Content**: JSON data structures
+- **Examples**: `package.json`, `manifest.json`, `tsconfig.json`
+
+## File Type Rules
+
+### ✅ CORRECT File Usage
+- **HTML Structure**: Use `.html` for page structure and layout
+- **CSS Styling**: Use `.css` for all styling with Tailwind utilities
+- **TypeScript Logic**: Use `.ts` for functions, utilities, and business logic
+- **React Components**: Use `.tsx` for React components with TypeScript
+- **Configuration**: Use `.json` for configuration files
+- **Build Scripts**: Use `.js` for Vite and build configuration
+
+### ❌ INCORRECT File Usage
+- **Don't use .ts for HTML** - Use `.html` for page structure
+- **Don't use .ts for CSS** - Use `.css` for styling
+- **Don't use .ts for JSON** - Use `.json` for configuration
+- **Don't mix file types** - Keep each file type for its intended purpose
+
+## File Organization Examples
+
+### Popup Page Structure
+```
+src/pages/popup/
+├── popup.html          # ✅ HTML structure
+├── popup.tsx           # ✅ React component
+└── popup.css           # ✅ Tailwind styling
+```
+
+### Options Page Structure
+```
+src/pages/options/
+├── options.html        # ✅ HTML structure
+├── options.tsx         # ✅ React component
+└── options.css         # ✅ Tailwind styling
+```
+
+### Service Worker Structure
+```
+src/background/
+├── service-worker.ts   # ✅ TypeScript logic
+└── message-handlers.ts # ✅ TypeScript utilities
+```
+
+### Content Script Structure
+```
+src/content-scripts/
+├── main-content-script.ts  # ✅ TypeScript logic
+└── overlay-content-script.ts # ✅ TypeScript logic
+```
+
+### Component Structure
+```
+src/components/ui/
+├── Button.tsx          # ✅ React component
+├── Input.tsx           # ✅ React component
+└── Card.tsx            # ✅ React component
+```
+
+### Utility Structure
+```
+src/utilities/
+├── dom-utils.ts        # ✅ TypeScript functions
+├── data-utils.ts       # ✅ TypeScript functions
+└── validation-utils.ts # ✅ TypeScript functions
+```
+
+## File Type Validation
+
+### HTML File Validation
+- [ ] Contains proper HTML5 structure
+- [ ] Uses semantic elements (header, main, section, etc.)
+- [ ] Includes Tailwind CSS classes
+- [ ] Has proper script tags for TypeScript/React
+
+### CSS File Validation
+- [ ] Uses Tailwind CSS utilities
+- [ ] Contains custom component classes
+- [ ] Follows CSS organization patterns
+- [ ] Includes proper CSS layers
+
+### TypeScript File Validation
+- [ ] Contains proper type annotations
+- [ ] Uses Chrome extension APIs correctly
+- [ ] Follows TypeScript best practices
+- [ ] Has proper error handling
+
+### React TypeScript File Validation
+- [ ] Contains React components with TypeScript
+- [ ] Uses proper prop types
+- [ ] Follows React best practices
+- [ ] Integrates with Tailwind CSS
+
+## File Type Best Practices
+
+### 1. Separation of Concerns
+- **HTML**: Structure and semantic markup
+- **CSS**: Styling and visual design
+- **TypeScript**: Logic and functionality
+- **React**: Component composition and state management
+
+### 2. File Naming Conventions
+- **HTML**: `kebab-case.html` (e.g., `popup.html`)
+- **CSS**: `kebab-case.css` (e.g., `main.css`)
+- **TypeScript**: `kebab-case.ts` (e.g., `service-worker.ts`)
+- **React**: `PascalCase.tsx` (e.g., `Button.tsx`)
+
+### 3. Import/Export Patterns
+- **HTML**: Link CSS and script files
+- **CSS**: Import Tailwind and custom styles
+- **TypeScript**: Use ES6 imports/exports
+- **React**: Use named exports for components
+
+### 4. Chrome Extension Specific
+- **Manifest**: Always use `manifest.json`
+- **Service Worker**: Use `.ts` files compiled to `.js`
+- **Content Scripts**: Use `.ts` files for logic
+- **Pages**: Use `.html` + `.tsx` + `.css` combination

@@ -1,0 +1,246 @@
+---
+description: Chrome Extension Development - Manifest V3, Vite + TypeScript + Tailwind CSS, September 2025 Standards
+globs:
+- "**/manifest.json"
+- "**/service-worker.*"
+- "**/*.ts"
+- "**/*.tsx"
+- "**/*.mts"
+- "**/*.js"
+- "**/popup/**"
+- "**/options/**"
+- "**/content-scripts/**"
+- "**/background/**"
+- "**/vite.config.*"
+- "**/tailwind.config.*"
+- "**/tsconfig.*"
+alwaysApply: true
+priority: critical
+---
+
+# Chrome Extension Development Rules - Modern Vite + TypeScript + Tailwind CSS
+
+## Core Development Philosophy (September 2025)
+- **Manifest V3 ONLY** - No legacy Manifest V2 code
+- **Vite Build System** - Modern, fast development and optimized builds
+- **TypeScript for Logic** - Use .ts/.tsx files for functions, components, and business logic
+- **Tailwind CSS for Styling** - Use .css files with Tailwind utilities for all styling
+- **HTML for Structure** - Use .html files for page structure and layout
+- **Service Workers** - Use .ts files with Vite compilation
+- **Modern Web APIs** - Latest Chrome extension APIs with TypeScript support
+- **Security-first approach** - Minimal permissions, CSP compliance, type safety
+- **Performance-optimized** - Vite's HMR, tree-shaking, and optimized builds
+
+## Project Organization
+- **Use @shared-reusable-project-structure** for detailed architecture guidance
+- **TypeScript for Logic** - Use .ts/.tsx files for functions, components, and business logic
+- **Tailwind CSS for Styling** - Use .css files with Tailwind utilities for all styling
+- **HTML for Structure** - Use .html files for page structure and layout
+- **Vite build optimization** - Modern bundling and development experience
+- **Component hierarchy** - components separated by complexity level
+- **Single file per component** - no mixing of responsibilities
+
+## File Type Requirements
+- **TypeScript Files** - Use `.ts` for functions, utilities, services, and business logic
+- **React Components** - Use `.tsx` for React components with TypeScript
+- **HTML Files** - Use `.html` for page structure, popup, options, and welcome pages
+- **CSS Files** - Use `.css` for styling with Tailwind CSS utilities
+- **JSON Files** - Use `.json` for configuration (manifest.json, package.json, etc.)
+- **Vite configuration** - Use `vite.config.ts` for build configuration
+- **TypeScript strict mode** - Enable all strict type checking options
+- **Type definitions** - Define interfaces for all Chrome extension APIs
+- **Build optimization** - Leverage Vite's tree-shaking and code splitting
+
+## Manifest V3 Requirements
+- Always use `"manifest_version": 3`
+- Use `service_worker` for background scripts (compiled from TypeScript)
+- Implement `action` instead of `browser_action`
+- Use `host_permissions` instead of `permissions` for sites
+- Follow Content Security Policy v3 rules
+- Type-safe manifest validation
+
+## Code Standards
+- **Follow @typescript-standards** - for TypeScript best practices
+- **Follow @tailwind-css-standards** - for styling guidelines
+- **Follow @vite-build-standards** - for build configuration
+- **Use @codebase-analysis-agent** - for thorough analysis and implementation
+- **Async/await only** - no callbacks or .then() chains
+- **Comprehensive error handling** - with typed error classes
+- **Type safety** - All functions and variables must be properly typed
+
+## Service Worker Requirements (Single Service Worker Architecture)
+- **Single Service Worker** - Use only ONE service worker file for the entire extension
+- **Use .ts extension** - Write service worker in TypeScript, Vite compiles to .js
+- **Type-safe Chrome APIs** - Use typed Chrome extension APIs
+- **Vite compilation** - Service worker compiled by Vite build system
+- **Communication Hub** - Service worker acts as communication bridge between content scripts
+- **Main World Integration** - Service worker handles main world integration for content scripts
+- **Type definitions** - Define interfaces for all message types and data structures
+
+## Content Script Requirements (Multiple Content Scripts Architecture)
+- **Multiple Content Scripts** - Use multiple .ts files for different functionalities
+- **TypeScript modules** - Use .ts files for content script logic
+- **Vite bundling** - Content scripts bundled by Vite with proper dependencies
+- **Type safety** - All content script interactions must be typed
+- **Modern imports** - Use ES6 imports, Vite handles the bundling
+- **Error handling** - Comprehensive error handling with typed error classes
+- **Service Worker Communication** - All content scripts communicate through single service worker
+- **Main Functionality** - All extension functionality lives in content scripts
+
+## Chrome APIs - TypeScript + Vite Approaches
+
+### Single Service Worker (.ts file)
+```typescript
+// ✅ Single Service Worker - Communication Hub for Content Scripts
+interface MessageRequest {
+  action: string;
+  data?: unknown;
+  source: 'content-script' | 'popup' | 'options';
+}
+
+interface MessageResponse {
+  success: boolean;
+  data?: unknown;
+  error?: string;
+}
+
+// Service Worker - Communication Hub
+chrome.runtime.onMessage.addListener((
+  request: MessageRequest, 
+  sender: chrome.runtime.MessageSender, 
+  sendResponse: (response: MessageResponse) => void
+) => {
+  // Route messages between content scripts
+  if (request.source === 'content-script') {
+    handleContentScriptMessage(request, sender, sendResponse);
+  }
+});
+
+// Main World Integration for Content Scripts
+async function handleContentScriptMessage(
+  request: MessageRequest, 
+  sender: chrome.runtime.MessageSender, 
+  sendResponse: (response: MessageResponse) => void
+) {
+  try {
+    // Handle storage operations for content scripts
+    if (request.action === 'getStorage') {
+      const result = await chrome.storage.sync.get(request.data as string[]);
+      sendResponse({ success: true, data: result });
+    }
+    
+    // Handle API calls for content scripts
+    if (request.action === 'apiCall') {
+      const response = await fetch(request.data as string);
+      const data = await response.json();
+      sendResponse({ success: true, data });
+    }
+  } catch (error) {
+    sendResponse({ success: false, error: error.message });
+  }
+}
+
+// Storage API with type safety
+chrome.storage.sync.set({ key: 'value' });
+chrome.storage.sync.get(['key'], (result: Record<string, unknown>) => {
+  console.log(result);
+});
+
+// Action API with type safety
+chrome.action.setTitle({ title: 'New Title' });
+chrome.action.setBadgeText({ text: '5' });
+```
+
+### Content Scripts (.ts files)
+```typescript
+// ✅ Content Scripts - Main Functionality Implementation
+import type { MessageRequest, MessageResponse } from './types/chrome-api.types';
+
+// Content Script - Main functionality lives here
+class ContentScriptManager {
+  private serviceWorkerCommunication: ServiceWorkerCommunication;
+  
+  constructor() {
+    this.serviceWorkerCommunication = new ServiceWorkerCommunication();
+    this.initializeContentScript();
+  }
+  
+  private async initializeContentScript() {
+    // All main functionality in content script
+    await this.setupEventListeners();
+    await this.initializeUI();
+    await this.startMainProcess();
+  }
+  
+  // Main functionality methods
+  private async setupEventListeners() {
+    // DOM event listeners
+    document.addEventListener('click', this.handleClick.bind(this));
+    document.addEventListener('scroll', this.handleScroll.bind(this));
+  }
+  
+  private async initializeUI() {
+    // UI initialization
+    this.createOverlay();
+    this.injectStyles();
+  }
+  
+  private async startMainProcess() {
+    // Main business logic
+    await this.processPageContent();
+    await this.analyzeData();
+  }
+  
+  // Communication with service worker
+  private async sendToServiceWorker(action: string, data?: unknown) {
+    const request: MessageRequest = {
+      action,
+      data,
+      source: 'content-script'
+    };
+    
+    return await this.serviceWorkerCommunication.sendMessage(request);
+  }
+}
+
+// Service Worker Communication Helper
+class ServiceWorkerCommunication {
+  async sendMessage(request: MessageRequest): Promise<MessageResponse> {
+    return new Promise((resolve) => {
+      chrome.runtime.sendMessage(request, (response: MessageResponse) => {
+        resolve(response);
+      });
+    });
+  }
+}
+
+// Initialize content script
+new ContentScriptManager();
+```
+
+## Performance Standards (Vite + TypeScript)
+- **See @typescript-standards** - for detailed TypeScript performance patterns
+- **Vite optimization** - Leverage Vite's tree-shaking and code splitting
+- **Service Workers**: TypeScript compiled to optimized JavaScript
+- **Content Scripts**: Vite-bundled modules with proper dependency management
+- **Lazy loading** - Use dynamic imports with TypeScript support
+- **Cache API responses** - use chrome.storage for caching with type safety
+
+## Security Requirements (TypeScript Enhanced)
+- **Minimal permissions** - request only what's absolutely needed
+- **CSP v3 compliance** - no inline scripts, use hash/nonce
+- **Type safety** - TypeScript prevents many runtime security issues
+- **Sanitize all inputs** - prevent XSS attacks with typed validation
+- **Validate all messages** - between content scripts and background with type checking
+- **Use HTTPS** - for all external API calls
+- **Type-safe APIs** - All Chrome extension API calls must be properly typed
+
+## Code Quality Standards (Modern Stack)
+- **TypeScript strict mode** - Enable all strict type checking options
+- **ESLint + Prettier** - TypeScript-aware linting and formatting
+- **Tailwind CSS** - Utility-first styling with consistent design system
+- **Vite build optimization** - Fast builds and hot module replacement
+- **Unit tests** - TypeScript-compatible testing with Vitest
+- **Error logging** - Comprehensive error tracking with typed error classes
+- **Version control** - semantic versioning for releases
+- **Type definitions** - Complete type coverage for all Chrome extension APIs

@@ -1,0 +1,810 @@
+---
+description: Tailwind CSS Standards for Chrome Extensions - Utility-First CSS, September 2025
+globs:
+- "**/*.css"
+- "**/*.tsx"
+- "**/*.jsx"
+- "**/tailwind.config.*"
+- "**/postcss.config.*"
+- "**/styles/**"
+alwaysApply: true
+priority: high
+---
+
+# Tailwind CSS Standards for Chrome Extensions
+
+## File Type Usage
+- **CSS Files (.css)** - Use for all styling with Tailwind CSS utilities
+- **React Files (.tsx)** - Use Tailwind classes in className props
+- **HTML Files (.html)** - Use Tailwind classes in class attributes
+
+## Tailwind CSS Philosophy
+- **Utility-First** - Build complex components from utility classes
+- **Mobile-First** - Design for mobile, then enhance for larger screens
+- **Consistent Design** - Use design system enforced through utilities
+- **Performance** - Only used styles are included in final bundle
+- **Maintainability** - Easy to maintain and update styles
+- **Accessibility** - Built-in accessibility features and patterns
+- **See @html-css-ui-standards** - for Chrome Extension specific UI patterns
+
+## Tailwind Configuration
+
+### Base Configuration
+```javascript
+// tailwind.config.js
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        primary: {
+          50: '#eff6ff',
+          100: '#dbeafe',
+          200: '#bfdbfe',
+          300: '#93c5fd',
+          400: '#60a5fa',
+          500: '#3b82f6',
+          600: '#2563eb',
+          700: '#1d4ed8',
+          800: '#1e40af',
+          900: '#1e3a8a',
+          950: '#172554',
+        },
+        gray: {
+          50: '#f9fafb',
+          100: '#f3f4f6',
+          200: '#e5e7eb',
+          300: '#d1d5db',
+          400: '#9ca3af',
+          500: '#6b7280',
+          600: '#4b5563',
+          700: '#374151',
+          800: '#1f2937',
+          900: '#111827',
+          950: '#030712',
+        }
+      },
+      fontFamily: {
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        mono: ['JetBrains Mono', 'monospace'],
+      },
+      spacing: {
+        '18': '4.5rem',
+        '88': '22rem',
+        '128': '32rem',
+      },
+      animation: {
+        'fade-in': 'fadeIn 0.3s ease-out',
+        'slide-in': 'slideIn 0.3s ease-out',
+        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'bounce-slow': 'bounce 2s infinite',
+      },
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0', transform: 'translateY(10px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' }
+        },
+        slideIn: {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(0)' }
+        }
+      }
+    },
+  },
+  plugins: [
+    '@tailwindcss/forms',
+    '@tailwindcss/typography',
+    '@tailwindcss/aspect-ratio',
+  ],
+  darkMode: 'class',
+}
+```
+
+### Chrome Extension Specific Configuration
+```javascript
+// tailwind.config.js - Chrome Extension optimized
+export default {
+  content: [
+    "./src/**/*.{js,ts,jsx,tsx}",
+    "./index.html",
+  ],
+  theme: {
+    extend: {
+      // Chrome extension specific colors
+      colors: {
+        chrome: {
+          bg: '#ffffff',
+          'bg-dark': '#2d2d30',
+          border: '#e1e4e8',
+          'border-dark': '#3c3c3c',
+          text: '#24292e',
+          'text-dark': '#f0f0f0',
+          accent: '#0366d6',
+          'accent-dark': '#58a6ff',
+        }
+      },
+      // Chrome extension specific spacing
+      spacing: {
+        'popup': '400px',
+        'popup-sm': '320px',
+        'popup-lg': '500px',
+      },
+      // Chrome extension specific animations
+      animation: {
+        'chrome-fade': 'chromeFade 0.2s ease-out',
+        'chrome-slide': 'chromeSlide 0.3s ease-out',
+      },
+      keyframes: {
+        chromeFade: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' }
+        },
+        chromeSlide: {
+          '0%': { transform: 'translateY(-10px)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' }
+        }
+      }
+    },
+  },
+  plugins: [
+    // Custom plugin for Chrome extension utilities
+    function({ addUtilities }) {
+      addUtilities({
+        '.chrome-popup': {
+          width: '400px',
+          'min-height': '500px',
+          'max-height': '600px',
+        },
+        '.chrome-overlay': {
+          position: 'fixed',
+          'z-index': '999999',
+        },
+        '.chrome-safe': {
+          'all': 'initial',
+          'font-family': 'system-ui, -apple-system, sans-serif',
+          'font-size': '14px',
+          'color': 'inherit'
+        }
+      })
+    }
+  ]
+}
+```
+
+## CSS Architecture
+
+### Main CSS File Structure
+```css
+/* src/styles/main.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Chrome Extension specific base styles */
+@layer base {
+  /* Reset for content script injection */
+  .chrome-extension-overlay {
+    @apply chrome-safe;
+  }
+  
+  /* Dark mode support */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+    }
+  }
+  
+  /* Focus management for accessibility */
+  :focus-visible {
+    @apply outline-none ring-2 ring-blue-500 ring-offset-2;
+  }
+}
+
+/* Reusable component classes */
+@layer components {
+  .btn-primary {
+    @apply bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:opacity-60 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-200 hover:bg-gray-300 active:bg-gray-400 disabled:opacity-60 disabled:cursor-not-allowed text-gray-900 font-medium py-2 px-4 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2;
+  }
+  
+  .btn-danger {
+    @apply bg-red-600 hover:bg-red-700 active:bg-red-800 disabled:opacity-60 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2;
+  }
+  
+  .input-field {
+    @apply w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white transition-colors duration-200;
+  }
+  
+  .input-error {
+    @apply border-red-500 focus:ring-red-500 focus:border-red-500;
+  }
+  
+  .card {
+    @apply bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6;
+  }
+  
+  .card-hover {
+    @apply hover:shadow-md transition-shadow duration-200 cursor-pointer;
+  }
+  
+  .popup-container {
+    @apply chrome-popup bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100;
+  }
+  
+  .overlay-container {
+    @apply chrome-overlay bg-white dark:bg-gray-800 rounded-lg shadow-xl p-4 max-w-sm border border-gray-200 dark:border-gray-700;
+  }
+}
+
+/* Custom utilities for Chrome extensions */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  .chrome-popup {
+    @apply w-96 min-h-[500px] max-h-[600px] overflow-y-auto;
+  }
+  
+  .chrome-overlay {
+    @apply fixed top-4 right-4 z-[999999] max-w-sm;
+  }
+  
+  .chrome-safe {
+    all: initial;
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    color: inherit;
+  }
+}
+```
+
+## Component Patterns
+
+### Button Components
+```tsx
+// components/ui/Button.tsx
+import React from 'react';
+import { cn } from '@/utils/cn';
+
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  children: React.ReactNode;
+}
+
+export const Button: React.FC<ButtonProps> = ({ 
+  variant = 'primary', 
+  size = 'md', 
+  className,
+  children, 
+  ...props 
+}) => {
+  const baseClasses = 'font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed';
+  
+  const variantClasses = {
+    primary: 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white focus:ring-blue-500',
+    secondary: 'bg-gray-200 hover:bg-gray-300 active:bg-gray-400 text-gray-900 focus:ring-gray-500',
+    danger: 'bg-red-600 hover:bg-red-700 active:bg-red-800 text-white focus:ring-red-500',
+    ghost: 'bg-transparent hover:bg-gray-100 active:bg-gray-200 text-gray-700 focus:ring-gray-500'
+  };
+  
+  const sizeClasses = {
+    sm: 'py-1.5 px-3 text-sm',
+    md: 'py-2 px-4 text-base',
+    lg: 'py-3 px-6 text-lg'
+  };
+  
+  return (
+    <button
+      className={cn(
+        baseClasses,
+        variantClasses[variant],
+        sizeClasses[size],
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+};
+```
+
+### Input Components
+```tsx
+// components/ui/Input.tsx
+import React from 'react';
+import { cn } from '@/utils/cn';
+
+interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  label?: string;
+  error?: string;
+  helperText?: string;
+}
+
+export const Input: React.FC<InputProps> = ({ 
+  label,
+  error,
+  helperText,
+  className,
+  id,
+  ...props 
+}) => {
+  const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
+  
+  return (
+    <div className="space-y-2">
+      {label && (
+        <label 
+          htmlFor={inputId}
+          className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
+          {label}
+          {props.required && (
+            <span className="text-red-500 ml-1" aria-label="required">*</span>
+          )}
+        </label>
+      )}
+      
+      <input
+        id={inputId}
+        className={cn(
+          'w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white transition-colors duration-200',
+          error ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 dark:border-gray-600',
+          className
+        )}
+        aria-describedby={error ? `${inputId}-error` : helperText ? `${inputId}-helper` : undefined}
+        {...props}
+      />
+      
+      {error && (
+        <p id={`${inputId}-error`} className="text-sm text-red-600 dark:text-red-400" role="alert">
+          {error}
+        </p>
+      )}
+      
+      {helperText && !error && (
+        <p id={`${inputId}-helper`} className="text-sm text-gray-500 dark:text-gray-400">
+          {helperText}
+        </p>
+      )}
+    </div>
+  );
+};
+```
+
+### Card Components
+```tsx
+// components/ui/Card.tsx
+import React from 'react';
+import { cn } from '@/utils/cn';
+
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  variant?: 'default' | 'elevated' | 'outlined';
+  hover?: boolean;
+  children: React.ReactNode;
+}
+
+export const Card: React.FC<CardProps> = ({ 
+  variant = 'default',
+  hover = false,
+  className,
+  children,
+  ...props 
+}) => {
+  const baseClasses = 'rounded-lg p-6 transition-all duration-200';
+  
+  const variantClasses = {
+    default: 'bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700',
+    elevated: 'bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700',
+    outlined: 'bg-transparent border-2 border-gray-200 dark:border-gray-700'
+  };
+  
+  const hoverClasses = hover ? 'hover:shadow-md cursor-pointer' : '';
+  
+  return (
+    <div
+      className={cn(
+        baseClasses,
+        variantClasses[variant],
+        hoverClasses,
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </div>
+  );
+};
+```
+
+## Layout Patterns
+
+### Popup Layout
+```tsx
+// layouts/PopupLayout.tsx
+import React from 'react';
+import { Header } from '@/components/layout/Header';
+import { Footer } from '@/components/layout/Footer';
+
+interface PopupLayoutProps {
+  children: React.ReactNode;
+  title?: string;
+}
+
+export const PopupLayout: React.FC<PopupLayoutProps> = ({ 
+  children, 
+  title = 'Extension' 
+}) => {
+  return (
+    <div className="chrome-popup bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+      <Header title={title} />
+      
+      <main className="p-4 space-y-4">
+        {children}
+      </main>
+      
+      <Footer />
+    </div>
+  );
+};
+```
+
+### Options Layout
+```tsx
+// layouts/OptionsLayout.tsx
+import React from 'react';
+import { Header } from '@/components/layout/Header';
+import { Sidebar } from '@/components/layout/Sidebar';
+
+interface OptionsLayoutProps {
+  children: React.ReactNode;
+  currentSection?: string;
+}
+
+export const OptionsLayout: React.FC<OptionsLayoutProps> = ({ 
+  children, 
+  currentSection 
+}) => {
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <Header title="Extension Settings" />
+      
+      <div className="flex">
+        <Sidebar currentSection={currentSection} />
+        
+        <main className="flex-1 p-8">
+          <div className="max-w-4xl mx-auto">
+            {children}
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+};
+```
+
+## Responsive Design Patterns
+
+### Mobile-First Approach
+```tsx
+// Responsive grid example
+<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+  <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+    {/* Grid item content */}
+  </div>
+</div>
+
+// Responsive typography
+<h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white">
+  Responsive Heading
+</h1>
+
+// Responsive spacing
+<div className="p-4 sm:p-6 md:p-8 lg:p-10">
+  <div className="space-y-4 sm:space-y-6 md:space-y-8">
+    {/* Content with responsive spacing */}
+  </div>
+</div>
+```
+
+### Container Queries
+```tsx
+// Container query example
+<div className="@container">
+  <div className="@lg:grid @lg:grid-cols-2 @lg:gap-4">
+    <div className="@lg:col-span-1">
+      {/* Content that responds to container size */}
+    </div>
+  </div>
+</div>
+```
+
+## Dark Mode Implementation
+
+### Theme Provider
+```tsx
+// providers/ThemeProvider.tsx
+import React, { createContext, useContext, useEffect, useState } from 'react';
+
+type Theme = 'light' | 'dark' | 'system';
+
+interface ThemeContextType {
+  theme: Theme;
+  setTheme: (theme: Theme) => void;
+  actualTheme: 'light' | 'dark';
+}
+
+const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+
+export const useTheme = () => {
+  const context = useContext(ThemeContext);
+  if (!context) {
+    throw new Error('useTheme must be used within a ThemeProvider');
+  }
+  return context;
+};
+
+export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [theme, setTheme] = useState<Theme>('system');
+  const [actualTheme, setActualTheme] = useState<'light' | 'dark'>('light');
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme') as Theme;
+    if (savedTheme) {
+      setTheme(savedTheme);
+    }
+  }, []);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    
+    if (theme === 'system') {
+      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      setActualTheme(systemTheme);
+      root.classList.toggle('dark', systemTheme === 'dark');
+    } else {
+      setActualTheme(theme);
+      root.classList.toggle('dark', theme === 'dark');
+    }
+  }, [theme]);
+
+  const handleSetTheme = (newTheme: Theme) => {
+    setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+  };
+
+  return (
+    <ThemeContext.Provider value={{ theme, setTheme: handleSetTheme, actualTheme }}>
+      {children}
+    </ThemeContext.Provider>
+  );
+};
+```
+
+### Dark Mode Toggle
+```tsx
+// components/ui/ThemeToggle.tsx
+import React from 'react';
+import { useTheme } from '@/providers/ThemeProvider';
+
+export const ThemeToggle: React.FC = () => {
+  const { theme, setTheme, actualTheme } = useTheme();
+
+  return (
+    <button
+      onClick={() => setTheme(actualTheme === 'light' ? 'dark' : 'light')}
+      className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+      aria-label={`Switch to ${actualTheme === 'light' ? 'dark' : 'light'} mode`}
+    >
+      {actualTheme === 'light' ? (
+        // Moon icon for dark mode
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+        </svg>
+      ) : (
+        // Sun icon for light mode
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+        </svg>
+      )}
+    </button>
+  );
+};
+```
+
+## Animation Patterns
+
+### Loading States
+```tsx
+// components/ui/Spinner.tsx
+import React from 'react';
+import { cn } from '@/utils/cn';
+
+interface SpinnerProps {
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+export const Spinner: React.FC<SpinnerProps> = ({ size = 'md', className }) => {
+  const sizeClasses = {
+    sm: 'w-4 h-4',
+    md: 'w-6 h-6',
+    lg: 'w-8 h-8'
+  };
+
+  return (
+    <div
+      className={cn(
+        'animate-spin rounded-full border-2 border-gray-300 border-t-blue-600',
+        sizeClasses[size],
+        className
+      )}
+      role="status"
+      aria-label="Loading"
+    >
+      <span className="sr-only">Loading...</span>
+    </div>
+  );
+};
+```
+
+### Skeleton Loading
+```tsx
+// components/ui/Skeleton.tsx
+import React from 'react';
+import { cn } from '@/utils/cn';
+
+interface SkeletonProps {
+  className?: string;
+  lines?: number;
+}
+
+export const Skeleton: React.FC<SkeletonProps> = ({ className, lines = 1 }) => {
+  if (lines === 1) {
+    return (
+      <div
+        className={cn(
+          'animate-pulse bg-gray-200 dark:bg-gray-700 rounded',
+          className
+        )}
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {Array.from({ length: lines }).map((_, index) => (
+        <div
+          key={index}
+          className={cn(
+            'animate-pulse bg-gray-200 dark:bg-gray-700 rounded h-4',
+            index === lines - 1 ? 'w-3/4' : 'w-full',
+            className
+          )}
+        />
+      ))}
+    </div>
+  );
+};
+```
+
+## Performance Optimization
+
+### Purge Configuration
+```javascript
+// tailwind.config.js - Production optimization
+export default {
+  content: [
+    "./src/**/*.{js,ts,jsx,tsx}",
+    "./index.html"
+  ],
+  // Purge unused styles in production
+  purge: {
+    enabled: process.env.NODE_ENV === 'production',
+    content: ['./src/**/*.{js,ts,jsx,tsx}'],
+    options: {
+      safelist: [
+        // Keep dynamic classes that might be missed
+        'dark',
+        'light',
+        /^animate-/,
+        /^transition-/,
+        /^chrome-/
+      ]
+    }
+  }
+}
+```
+
+### CSS Layer Organization
+```css
+/* src/styles/main.css - Optimized structure */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Chrome Extension specific base styles */
+@layer base {
+  .chrome-extension-overlay {
+    @apply chrome-safe;
+  }
+}
+
+/* Reusable component classes */
+@layer components {
+  .btn-primary {
+    @apply bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+  }
+}
+
+/* Custom utilities for Chrome extensions */
+@layer utilities {
+  .chrome-popup {
+    @apply w-96 min-h-[500px] max-h-[600px] overflow-y-auto;
+  }
+}
+```
+
+## Accessibility Standards
+
+### Focus Management
+```tsx
+// Focus management example
+<button className="focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
+  Accessible Button
+</button>
+
+// Skip links
+<a 
+  href="#main-content" 
+  className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-blue-600 text-white px-4 py-2 rounded-md z-50"
+>
+  Skip to main content
+</a>
+```
+
+### Screen Reader Support
+```tsx
+// Screen reader only content
+<span className="sr-only">This text is only visible to screen readers</span>
+
+// High contrast support
+<div className="border-2 border-transparent focus-within:border-current">
+  <input className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+</div>
+```
+
+## Tailwind CSS Best Practices
+
+### 1. Class Organization
+- **Group related classes** - layout, spacing, colors, etc.
+- **Use consistent ordering** - positioning, display, sizing, spacing, colors, typography, effects
+- **Extract to components** - for repeated patterns
+- **Use arbitrary values** - when needed: `w-[400px]`, `h-[calc(100vh-2rem)]`
+
+### 2. Performance
+- **Use purge configuration** - remove unused styles
+- **Minimize custom CSS** - prefer utilities
+- **Use CSS layers** - organize styles properly
+- **Optimize for Chrome extensions** - minimal bundle size
+
+### 3. Maintainability
+- **Use design tokens** - consistent spacing, colors, typography
+- **Document custom utilities** - explain complex patterns
+- **Use TypeScript** - type-safe class names
+- **Regular audits** - check for unused styles
+
+### 4. Chrome Extension Specific
+- **Chrome-safe styles** - work in all contexts
+- **Popup optimization** - specific sizing and layout
+- **Content script compatibility** - avoid conflicts
+- **Dark mode support** - system preference detection

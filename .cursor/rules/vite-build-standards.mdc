@@ -1,0 +1,553 @@
+---
+description: Vite Build Standards for Chrome Extensions - Modern Build System, September 2025
+globs:
+- "**/vite.config.*"
+- "**/package.json"
+- "**/index.html"
+- "**/src/**"
+- "**/dist/**"
+- "**/build/**"
+alwaysApply: true
+priority: high
+---
+
+# Vite Build Standards for Chrome Extensions
+
+## Vite Configuration Requirements
+- **Modern Build System** - Use Vite for fast development and optimized builds
+- **TypeScript Support** - Full TypeScript integration with type checking
+- **Chrome Extension Optimization** - Specialized configuration for extension development
+- **Hot Module Replacement** - Fast development with instant updates
+- **Tree Shaking** - Remove unused code for optimal bundle size
+- **Code Splitting** - Efficient loading of extension components
+- **See @typescript-standards** - for TypeScript configuration and patterns
+- **See @shared-reusable-project-structure** - for project organization
+
+## Essential Vite Configuration
+
+### Base Vite Configuration
+```typescript
+// vite.config.ts
+import { defineConfig } from 'vite';
+import { resolve } from 'path';
+import react from '@vitejs/plugin-react';
+import { crx } from '@crxjs/vite-plugin';
+
+export default defineConfig({
+  plugins: [
+    react(),
+    crx({
+      manifest: './manifest.json'
+    })
+  ],
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, 'src'),
+      '@/types': resolve(__dirname, 'src/types'),
+      '@/components': resolve(__dirname, 'src/components'),
+      '@/utils': resolve(__dirname, 'src/utils'),
+      '@/services': resolve(__dirname, 'src/services'),
+      '@/hooks': resolve(__dirname, 'src/hooks')
+    }
+  },
+  build: {
+    rollupOptions: {
+      input: {
+        popup: resolve(__dirname, 'src/pages/popup/popup.html'),
+        options: resolve(__dirname, 'src/pages/options/options.html'),
+        background: resolve(__dirname, 'src/background/background.ts'),
+        content: resolve(__dirname, 'src/content/content.ts')
+      },
+      output: {
+        entryFileNames: '[name].js',
+        chunkFileNames: '[name].js',
+        assetFileNames: '[name].[ext]'
+      }
+    },
+    outDir: 'dist',
+    sourcemap: process.env.NODE_ENV === 'development',
+    minify: process.env.NODE_ENV === 'production'
+  },
+  server: {
+    port: 3000,
+    hmr: {
+      port: 3001
+    }
+  }
+});
+```
+
+### Chrome Extension Specific Configuration
+```typescript
+// vite.config.chrome.ts - Chrome Extension specific config
+import { defineConfig } from 'vite';
+import { resolve } from 'path';
+import react from '@vitejs/plugin-react';
+import { crx } from '@crxjs/vite-plugin';
+
+export default defineConfig({
+  plugins: [
+    react({
+      jsxImportSource: '@emotion/react',
+      babel: {
+        plugins: ['@emotion/babel-plugin']
+      }
+    }),
+    crx({
+      manifest: './manifest.json',
+      contentScripts: {
+        injectCss: true
+      }
+    })
+  ],
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, 'src')
+    }
+  },
+  build: {
+    rollupOptions: {
+      input: {
+        popup: resolve(__dirname, 'src/pages/popup/popup.html'),
+        options: resolve(__dirname, 'src/pages/options/options.html'),
+        background: resolve(__dirname, 'src/background/background.ts'),
+        content: resolve(__dirname, 'src/content/content.ts')
+      },
+      output: {
+        entryFileNames: (chunkInfo) => {
+          const facadeModuleId = chunkInfo.facadeModuleId
+            ? chunkInfo.facadeModuleId.split('/').pop()
+            : 'unknown';
+          return `${facadeModuleId}.js`;
+        },
+        chunkFileNames: '[name].js',
+        assetFileNames: '[name].[ext]'
+      }
+    },
+    outDir: 'dist',
+    sourcemap: false,
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true
+      }
+    }
+  }
+});
+```
+
+## Package.json Configuration
+
+### Essential Dependencies
+```json
+{
+  "name": "chrome-extension-vite",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "format": "prettier --write src/**/*.{ts,tsx,css,html}",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "@emotion/react": "^11.11.1",
+    "@emotion/styled": "^11.11.0"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.254",
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "@vitejs/plugin-react": "^4.2.1",
+    "@crxjs/vite-plugin": "^2.0.0-beta.21",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.10",
+    "vitest": "^1.0.4",
+    "@vitest/ui": "^1.0.4",
+    "c8": "^8.0.1",
+    "eslint": "^8.55.0",
+    "@typescript-eslint/eslint-plugin": "^6.14.0",
+    "@typescript-eslint/parser": "^6.14.0",
+    "prettier": "^3.1.1",
+    "tailwindcss": "^3.4.0",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.32"
+  }
+}
+```
+
+## Build Optimization Strategies
+
+### 1. Code Splitting for Chrome Extensions
+```typescript
+// vite.config.ts - Code splitting configuration
+export default defineConfig({
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Vendor chunks
+          'react-vendor': ['react', 'react-dom'],
+          'chrome-vendor': ['chrome'],
+          
+          // Feature chunks
+          'popup-features': [
+            './src/pages/popup/popup.tsx',
+            './src/components/ui/Button.tsx',
+            './src/components/ui/Input.tsx'
+          ],
+          'options-features': [
+            './src/pages/options/options.tsx',
+            './src/components/forms/FormField.tsx'
+          ],
+          
+          // Utility chunks
+          'utils': [
+            './src/utilities/dom-utils.ts',
+            './src/utilities/data-utils.ts'
+          ]
+        }
+      }
+    }
+  }
+});
+```
+
+### 2. Asset Optimization
+```typescript
+// vite.config.ts - Asset optimization
+export default defineConfig({
+  build: {
+    assetsInlineLimit: 4096, // Inline assets smaller than 4kb
+    rollupOptions: {
+      output: {
+        assetFileNames: (assetInfo) => {
+          const info = assetInfo.name.split('.');
+          const ext = info[info.length - 1];
+          if (/\.(png|jpe?g|svg|gif|tiff|bmp|ico)$/i.test(assetInfo.name)) {
+            return `assets/images/[name]-[hash][extname]`;
+          }
+          if (/\.(woff2?|eot|ttf|otf)$/i.test(assetInfo.name)) {
+            return `assets/fonts/[name]-[hash][extname]`;
+          }
+          return `assets/[name]-[hash][extname]`;
+        }
+      }
+    }
+  }
+});
+```
+
+### 3. Environment-Specific Builds
+```typescript
+// vite.config.ts - Environment configuration
+export default defineConfig(({ mode }) => {
+  const isProduction = mode === 'production';
+  const isDevelopment = mode === 'development';
+  
+  return {
+    define: {
+      __DEV__: isDevelopment,
+      __PROD__: isProduction
+    },
+    build: {
+      sourcemap: isDevelopment,
+      minify: isProduction ? 'terser' : false,
+      terserOptions: isProduction ? {
+        compress: {
+          drop_console: true,
+          drop_debugger: true
+        }
+      } : {}
+    }
+  };
+});
+```
+
+## Development Workflow
+
+### 1. Development Server Configuration
+```typescript
+// vite.config.ts - Development server
+export default defineConfig({
+  server: {
+    port: 3000,
+    host: true,
+    hmr: {
+      port: 3001,
+      host: 'localhost'
+    },
+    watch: {
+      usePolling: true,
+      interval: 1000
+    }
+  },
+  preview: {
+    port: 4173,
+    host: true
+  }
+});
+```
+
+### 2. Hot Module Replacement for Chrome Extensions
+```typescript
+// src/hmr.ts - HMR configuration for Chrome extensions
+if (import.meta.hot) {
+  import.meta.hot.accept((newModule) => {
+    if (newModule) {
+      // Handle HMR for Chrome extension specific code
+      if (typeof chrome !== 'undefined' && chrome.runtime) {
+        chrome.runtime.reload();
+      }
+    }
+  });
+}
+```
+
+### 3. TypeScript Integration
+```typescript
+// vite.config.ts - TypeScript configuration
+export default defineConfig({
+  esbuild: {
+    target: 'es2020'
+  },
+  build: {
+    target: 'es2020',
+    rollupOptions: {
+      external: ['chrome']
+    }
+  }
+});
+```
+
+## Chrome Extension Specific Build Patterns
+
+### 1. Manifest V3 Integration
+```typescript
+// vite.config.ts - Manifest V3 support
+import { crx } from '@crxjs/vite-plugin';
+
+export default defineConfig({
+  plugins: [
+    crx({
+      manifest: './manifest.json',
+      contentScripts: {
+        injectCss: true
+      }
+    })
+  ]
+});
+```
+
+### 2. Single Service Worker Build
+```typescript
+// vite.config.ts - Single service worker configuration
+export default defineConfig({
+  build: {
+    rollupOptions: {
+      input: {
+        'service-worker': resolve(__dirname, 'src/background/service-worker.ts')
+      },
+      output: {
+        entryFileNames: '[name].js'
+      }
+    }
+  }
+});
+```
+
+### 3. Multiple Content Scripts Build
+```typescript
+// vite.config.ts - Multiple content scripts configuration
+export default defineConfig({
+  build: {
+    rollupOptions: {
+      input: {
+        'main-content': resolve(__dirname, 'src/content-scripts/main-content-script.ts'),
+        'overlay-content': resolve(__dirname, 'src/content-scripts/overlay-content-script.ts'),
+        'injection-content': resolve(__dirname, 'src/content-scripts/injection-content-script.ts'),
+        'analytics-content': resolve(__dirname, 'src/content-scripts/analytics-content-script.ts'),
+        'ui-content': resolve(__dirname, 'src/content-scripts/ui-content-script.ts')
+      },
+      output: {
+        entryFileNames: '[name].js'
+      }
+    }
+  }
+});
+```
+
+## Performance Optimization
+
+### 1. Bundle Analysis
+```typescript
+// vite.config.ts - Bundle analysis
+import { defineConfig } from 'vite';
+import { visualizer } from 'rollup-plugin-visualizer';
+
+export default defineConfig({
+  plugins: [
+    visualizer({
+      filename: 'dist/stats.html',
+      open: true,
+      gzipSize: true,
+      brotliSize: true
+    })
+  ]
+});
+```
+
+### 2. Tree Shaking Configuration
+```typescript
+// vite.config.ts - Tree shaking
+export default defineConfig({
+  build: {
+    rollupOptions: {
+      treeshake: {
+        moduleSideEffects: false,
+        propertyReadSideEffects: false,
+        tryCatchDeoptimization: false
+      }
+    }
+  }
+});
+```
+
+### 3. Compression Configuration
+```typescript
+// vite.config.ts - Compression
+import { defineConfig } from 'vite';
+import { compression } from 'vite-plugin-compression';
+
+export default defineConfig({
+  plugins: [
+    compression({
+      algorithm: 'gzip',
+      ext: '.gz'
+    }),
+    compression({
+      algorithm: 'brotliCompress',
+      ext: '.br'
+    })
+  ]
+});
+```
+
+## Build Scripts and Automation
+
+### 1. Development Scripts
+```json
+{
+  "scripts": {
+    "dev": "vite --mode development",
+    "dev:chrome": "vite --mode chrome-dev",
+    "build": "tsc && vite build",
+    "build:chrome": "tsc && vite build --mode chrome-prod",
+    "build:analyze": "vite build --mode analyze",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit",
+    "type-check:watch": "tsc --noEmit --watch"
+  }
+}
+```
+
+### 2. Production Build Script
+```typescript
+// scripts/build.ts - Production build script
+import { build } from 'vite';
+import { resolve } from 'path';
+
+async function buildExtension() {
+  try {
+    console.log('Building Chrome Extension...');
+    
+    await build({
+      configFile: resolve(__dirname, '../vite.config.ts'),
+      mode: 'production'
+    });
+    
+    console.log('Build completed successfully!');
+  } catch (error) {
+    console.error('Build failed:', error);
+    process.exit(1);
+  }
+}
+
+buildExtension();
+```
+
+### 3. Development Watch Script
+```typescript
+// scripts/dev.ts - Development watch script
+import { createServer } from 'vite';
+import { resolve } from 'path';
+
+async function startDevServer() {
+  const server = await createServer({
+    configFile: resolve(__dirname, '../vite.config.ts'),
+    mode: 'development'
+  });
+  
+  await server.listen();
+  console.log('Development server started!');
+}
+
+startDevServer();
+```
+
+## Chrome Extension Build Checklist
+
+### Pre-Build
+- [ ] Verify manifest.json is valid
+- [ ] Check all TypeScript types are correct
+- [ ] Ensure all imports are properly resolved
+- [ ] Validate Chrome extension permissions
+
+### Build Process
+- [ ] Run TypeScript type checking
+- [ ] Execute Vite build process
+- [ ] Verify all entry points are built
+- [ ] Check bundle sizes are optimized
+- [ ] Validate Chrome extension structure
+
+### Post-Build
+- [ ] Test extension in Chrome
+- [ ] Verify all features work correctly
+- [ ] Check performance metrics
+- [ ] Validate security requirements
+- [ ] Test on different Chrome versions
+
+## Vite Best Practices for Chrome Extensions
+
+### 1. File Organization
+- **Entry Points**: Keep entry points minimal and focused
+- **Shared Code**: Use proper imports for shared utilities
+- **Type Definitions**: Centralize all type definitions
+- **Assets**: Organize assets by type and usage
+
+### 2. Performance
+- **Code Splitting**: Split code by feature and usage
+- **Tree Shaking**: Remove unused code
+- **Asset Optimization**: Optimize images and fonts
+- **Bundle Analysis**: Regular bundle size monitoring
+
+### 3. Development Experience
+- **Hot Reload**: Use HMR for fast development
+- **Type Safety**: Full TypeScript integration
+- **Error Handling**: Clear error messages and debugging
+- **Documentation**: Well-documented build process
+
+### 4. Chrome Extension Specific
+- **Manifest V3**: Full support for latest Chrome APIs
+- **Service Workers**: Proper service worker compilation
+- **Content Scripts**: Efficient content script bundling
+- **Permissions**: Minimal permission requests

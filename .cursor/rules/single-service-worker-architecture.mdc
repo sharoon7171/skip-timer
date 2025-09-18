@@ -1,0 +1,665 @@
+---
+description: Single Service Worker Architecture for Chrome Extensions - Official Chrome Documentation Compliance
+globs:
+- "**/manifest.json"
+- "**/service-worker.*"
+- "**/background/**"
+- "**/content-scripts/**"
+alwaysApply: true
+priority: critical
+---
+
+# Single Service Worker Architecture for Chrome Extensions
+
+## Official Chrome Extension Architecture (Manifest V3)
+
+### Core Principle: Single Service Worker + Multiple Content Scripts
+- **Single Service Worker** - Only ONE service worker for the entire extension
+- **Multiple Content Scripts** - Multiple content scripts for different functionalities
+- **Service Worker as Communication Hub** - Service worker facilitates communication between content scripts
+- **Main World Integration** - Service worker handles main world integration for content scripts
+- **All Functionality in Content Scripts** - Main extension functionality lives in content scripts
+
+## Manifest V3 Configuration
+
+### Single Service Worker Setup
+```json
+{
+  "manifest_version": 3,
+  "name": "Your Extension Name",
+  "version": "1.0",
+  "background": {
+    "service_worker": "service-worker.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://example.com/*"],
+      "js": ["main-content-script.js"]
+    },
+    {
+      "matches": ["*://another-example.com/*"],
+      "js": ["overlay-content-script.js"]
+    },
+    {
+      "matches": ["*://analytics-site.com/*"],
+      "js": ["analytics-content-script.js"]
+    }
+  ],
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://api.yourservice.com/*",
+    "<all_urls>"
+  ]
+}
+```
+
+## Service Worker Architecture
+
+### Single Service Worker Responsibilities
+- **Communication Hub** - Route messages between content scripts
+- **Main World Integration** - Handle browser APIs for content scripts
+- **Storage Management** - Manage extension storage for content scripts
+- **API Bridge** - Handle external API calls for content scripts
+- **Event Coordination** - Coordinate events between multiple content scripts
+
+### Service Worker Implementation
+```typescript
+// src/background/service-worker.ts
+interface MessageRequest {
+  action: string;
+  data?: unknown;
+  source: 'content-script' | 'popup' | 'options';
+  target?: string; // For routing between content scripts
+}
+
+interface MessageResponse {
+  success: boolean;
+  data?: unknown;
+  error?: string;
+}
+
+// Single Service Worker - Communication Hub
+chrome.runtime.onMessage.addListener((
+  request: MessageRequest, 
+  sender: chrome.runtime.MessageSender, 
+  sendResponse: (response: MessageResponse) => void
+) => {
+  // Route messages based on source and target
+  if (request.source === 'content-script') {
+    handleContentScriptMessage(request, sender, sendResponse);
+  } else if (request.source === 'popup') {
+    handlePopupMessage(request, sender, sendResponse);
+  } else if (request.source === 'options') {
+    handleOptionsMessage(request, sender, sendResponse);
+  }
+});
+
+// Content Script Message Handler with Main World Integration
+async function handleContentScriptMessage(
+  request: MessageRequest, 
+  sender: chrome.runtime.MessageSender, 
+  sendResponse: (response: MessageResponse) => void
+) {
+  try {
+    switch (request.action) {
+      case 'getStorage':
+        const storageResult = await chrome.storage.sync.get(request.data as string[]);
+        sendResponse({ success: true, data: storageResult });
+        break;
+        
+      case 'setStorage':
+        await chrome.storage.sync.set(request.data as Record<string, unknown>);
+        sendResponse({ success: true, data: 'Storage updated' });
+        break;
+        
+      case 'apiCall':
+        const apiResponse = await fetch(request.data as string);
+        const apiData = await apiResponse.json();
+        sendResponse({ success: true, data: apiData });
+        break;
+        
+      case 'executeInMainWorld':
+        // Main World Integration - Execute code in main world context
+        const result = await executeInMainWorld(sender.tab?.id, request.data);
+        sendResponse({ success: true, data: result });
+        break;
+        
+      case 'injectMainWorldScript':
+        // Inject script into main world for content script access
+        await injectMainWorldScript(sender.tab?.id, request.data);
+        sendResponse({ success: true, data: 'Script injected into main world' });
+        break;
+        
+      case 'broadcastToOtherContentScripts':
+        // Broadcast message to other content scripts
+        const tabs = await chrome.tabs.query({});
+        for (const tab of tabs) {
+          if (tab.id && tab.id !== sender.tab?.id) {
+            chrome.tabs.sendMessage(tab.id, {
+              action: request.data?.action,
+              data: request.data?.data,
+              source: 'service-worker'
+            });
+          }
+        }
+        sendResponse({ success: true, data: 'Message broadcasted' });
+        break;
+        
+      default:
+        sendResponse({ success: false, error: `Unknown action: ${request.action}` });
+    }
+  } catch (error) {
+    sendResponse({ 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    });
+  }
+}
+
+// Main World Integration Functions
+async function executeInMainWorld(tabId: number | undefined, scriptData: any) {
+  if (!tabId) throw new Error('No tab ID provided');
+  
+  // Execute script in main world context
+  const results = await chrome.scripting.executeScript({
+    target: { tabId },
+    func: (data) => {
+      // This code runs in the main world, not isolated world
+      return {
+        windowObject: typeof window !== 'undefined',
+        documentObject: typeof document !== 'undefined',
+        customData: data,
+        pageTitle: document.title,
+        pageUrl: window.location.href,
+        // Access to page's global variables and functions
+        pageGlobals: Object.keys(window).filter(key => 
+          !key.startsWith('chrome') && 
+          !key.startsWith('_') && 
+          typeof window[key] === 'function'
+        )
+      };
+    },
+    args: [scriptData]
+  });
+  
+  return results[0]?.result;
+}
+
+async function injectMainWorldScript(tabId: number | undefined, scriptData: any) {
+  if (!tabId) throw new Error('No tab ID provided');
+  
+  // Inject script into main world for content script access
+  await chrome.scripting.executeScript({
+    target: { tabId },
+    func: (data) => {
+      // Create global bridge for content script communication
+      (window as any).extensionBridge = {
+        data: data,
+        timestamp: Date.now(),
+        // Expose functions that content scripts can call
+        getPageData: () => ({
+          title: document.title,
+          url: window.location.href,
+          content: document.body.innerText
+        }),
+        // Expose page functions to content scripts
+        callPageFunction: (functionName: string, ...args: any[]) => {
+          if (typeof (window as any)[functionName] === 'function') {
+            return (window as any)[functionName](...args);
+          }
+          throw new Error(`Function ${functionName} not found in main world`);
+        }
+      };
+    },
+    args: [scriptData]
+  });
+}
+
+// Popup Message Handler
+async function handlePopupMessage(
+  request: MessageRequest, 
+  sender: chrome.runtime.MessageSender, 
+  sendResponse: (response: MessageResponse) => void
+) {
+  // Handle popup-specific requests
+  sendResponse({ success: true, data: 'Popup message handled' });
+}
+
+// Options Message Handler
+async function handleOptionsMessage(
+  request: MessageRequest, 
+  sender: chrome.runtime.MessageSender, 
+  sendResponse: (response: MessageResponse) => void
+) {
+  // Handle options-specific requests
+  sendResponse({ success: true, data: 'Options message handled' });
+}
+```
+
+## Content Scripts Architecture
+
+### Multiple Content Scripts Strategy
+- **Main Content Script** - Core functionality and page interaction
+- **Overlay Content Script** - UI overlays and modals
+- **Injection Content Script** - Dynamic content injection
+- **Analytics Content Script** - Data collection and analytics
+- **UI Content Script** - User interface components
+
+### Content Script Implementation
+```typescript
+// src/content-scripts/main-content-script.ts
+import type { MessageRequest, MessageResponse } from '@/types/chrome-api.types';
+
+class MainContentScript {
+  private serviceWorkerCommunication: ServiceWorkerCommunication;
+  
+  constructor() {
+    this.serviceWorkerCommunication = new ServiceWorkerCommunication();
+    this.initialize();
+  }
+  
+  private async initialize() {
+    // Main functionality initialization
+    await this.setupEventListeners();
+    await this.initializeUI();
+    await this.startMainProcess();
+  }
+  
+  // Main functionality methods
+  private async setupEventListeners() {
+    document.addEventListener('click', this.handleClick.bind(this));
+    document.addEventListener('scroll', this.handleScroll.bind(this));
+    document.addEventListener('keydown', this.handleKeydown.bind(this));
+  }
+  
+  private async initializeUI() {
+    // Create main UI elements
+    this.createMainOverlay();
+    this.injectStyles();
+    this.setupTooltips();
+  }
+  
+  private async startMainProcess() {
+    // Main business logic
+    await this.analyzePageContent();
+    await this.extractData();
+    await this.processInformation();
+  }
+  
+  // Communication with service worker
+  private async sendToServiceWorker(action: string, data?: unknown) {
+    const request: MessageRequest = {
+      action,
+      data,
+      source: 'content-script'
+    };
+    
+    return await this.serviceWorkerCommunication.sendMessage(request);
+  }
+  
+  // Main World Integration Methods
+  private async executeInMainWorld(scriptData: any) {
+    const result = await this.sendToServiceWorker('executeInMainWorld', scriptData);
+    if (result.success) {
+      return result.data;
+    }
+    throw new Error(result.error || 'Failed to execute in main world');
+  }
+  
+  private async injectMainWorldBridge() {
+    const result = await this.sendToServiceWorker('injectMainWorldScript', {
+      extensionId: chrome.runtime.id,
+      timestamp: Date.now()
+    });
+    
+    if (result.success) {
+      // Now content script can access main world through window.extensionBridge
+      this.setupMainWorldCommunication();
+    }
+  }
+  
+  private setupMainWorldCommunication() {
+    // Listen for messages from main world
+    window.addEventListener('message', (event) => {
+      if (event.source !== window) return;
+      
+      if (event.data.type === 'EXTENSION_BRIDGE_MESSAGE') {
+        this.handleMainWorldMessage(event.data);
+      }
+    });
+  }
+  
+  private handleMainWorldMessage(data: any) {
+    // Handle messages from main world
+    console.log('Message from main world:', data);
+  }
+  
+  // Access main world functions through the bridge
+  private async callMainWorldFunction(functionName: string, ...args: any[]) {
+    // First inject the bridge if not already done
+    await this.injectMainWorldBridge();
+    
+    // Send message to main world
+    window.postMessage({
+      type: 'EXTENSION_CALL_MAIN_WORLD',
+      functionName,
+      args,
+      extensionId: chrome.runtime.id
+    }, '*');
+  }
+  
+  // Event handlers
+  private async handleClick(event: MouseEvent) {
+    // Handle click events
+    const result = await this.sendToServiceWorker('handleClick', {
+      target: event.target,
+      coordinates: { x: event.clientX, y: event.clientY }
+    });
+    
+    if (result.success) {
+      // Process result
+    }
+  }
+  
+  private async handleScroll(event: Event) {
+    // Handle scroll events
+    await this.sendToServiceWorker('handleScroll', {
+      scrollY: window.scrollY,
+      scrollX: window.scrollX
+    });
+  }
+  
+  private async handleKeydown(event: KeyboardEvent) {
+    // Handle keyboard events
+    if (event.ctrlKey && event.key === 's') {
+      event.preventDefault();
+      await this.saveData();
+    }
+  }
+  
+  // Main functionality methods
+  private async analyzePageContent() {
+    // Analyze page content
+    const content = document.body.innerText;
+    const result = await this.sendToServiceWorker('analyzeContent', { content });
+    
+    if (result.success) {
+      this.displayAnalysis(result.data);
+    }
+  }
+  
+  private async extractData() {
+    // Extract data from page
+    const data = {
+      title: document.title,
+      url: window.location.href,
+      timestamp: Date.now()
+    };
+    
+    await this.sendToServiceWorker('extractData', data);
+  }
+  
+  private async processInformation() {
+    // Process extracted information
+    const result = await this.sendToServiceWorker('processInformation');
+    
+    if (result.success) {
+      this.updateUI(result.data);
+    }
+  }
+  
+  private async saveData() {
+    // Save data through service worker
+    const result = await this.sendToServiceWorker('saveData', {
+      pageData: this.getPageData()
+    });
+    
+    if (result.success) {
+      this.showNotification('Data saved successfully');
+    }
+  }
+  
+  // UI methods
+  private createMainOverlay() {
+    const overlay = document.createElement('div');
+    overlay.id = 'extension-main-overlay';
+    overlay.className = 'extension-overlay';
+    document.body.appendChild(overlay);
+  }
+  
+  private injectStyles() {
+    const style = document.createElement('style');
+    style.textContent = `
+      .extension-overlay {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 999999;
+        background: white;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        padding: 16px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      }
+    `;
+    document.head.appendChild(style);
+  }
+  
+  private setupTooltips() {
+    // Setup tooltips and UI enhancements
+  }
+  
+  private displayAnalysis(data: unknown) {
+    // Display analysis results
+  }
+  
+  private updateUI(data: unknown) {
+    // Update UI with processed data
+  }
+  
+  private showNotification(message: string) {
+    // Show notification to user
+  }
+  
+  private getPageData() {
+    // Get current page data
+    return {
+      title: document.title,
+      url: window.location.href,
+      content: document.body.innerText
+    };
+  }
+}
+
+// Service Worker Communication Helper
+class ServiceWorkerCommunication {
+  async sendMessage(request: MessageRequest): Promise<MessageResponse> {
+    return new Promise((resolve) => {
+      chrome.runtime.sendMessage(request, (response: MessageResponse) => {
+        resolve(response);
+      });
+    });
+  }
+}
+
+// Initialize main content script
+new MainContentScript();
+```
+
+## Communication Patterns
+
+### Content Script to Service Worker
+```typescript
+// Content script sends message to service worker
+const response = await chrome.runtime.sendMessage({
+  action: 'getStorage',
+  data: ['userSettings', 'preferences'],
+  source: 'content-script'
+});
+```
+
+### Service Worker to Content Script
+```typescript
+// Service worker sends message to content script
+chrome.tabs.sendMessage(tabId, {
+  action: 'updateUI',
+  data: { newData: 'value' },
+  source: 'service-worker'
+});
+```
+
+### Content Script to Content Script (via Service Worker)
+```typescript
+// Content script A broadcasts to other content scripts
+await chrome.runtime.sendMessage({
+  action: 'broadcastToOtherContentScripts',
+  data: {
+    action: 'syncData',
+    data: { sharedData: 'value' }
+  },
+  source: 'content-script'
+});
+```
+
+## Main World Integration Patterns
+
+### 1. Execute Code in Main World Context
+```typescript
+// Content script requests execution in main world
+const mainWorldResult = await chrome.runtime.sendMessage({
+  action: 'executeInMainWorld',
+  data: { 
+    operation: 'getPageGlobals',
+    customData: 'some data'
+  },
+  source: 'content-script'
+});
+
+// Service worker executes in main world and returns result
+// Content script receives data from main world context
+```
+
+### 2. Inject Main World Bridge
+```typescript
+// Content script requests main world bridge injection
+await chrome.runtime.sendMessage({
+  action: 'injectMainWorldScript',
+  data: {
+    extensionId: chrome.runtime.id,
+    bridgeName: 'extensionBridge'
+  },
+  source: 'content-script'
+});
+
+// Now content script can access main world through window.extensionBridge
+const pageData = (window as any).extensionBridge?.getPageData();
+const pageFunction = (window as any).extensionBridge?.callPageFunction('somePageFunction', arg1, arg2);
+```
+
+### 3. Two-Way Communication with Main World
+```typescript
+// Content script sends message to main world
+window.postMessage({
+  type: 'EXTENSION_CALL_MAIN_WORLD',
+  functionName: 'pageFunction',
+  args: ['arg1', 'arg2'],
+  extensionId: chrome.runtime.id
+}, '*');
+
+// Main world responds back
+window.addEventListener('message', (event) => {
+  if (event.data.type === 'MAIN_WORLD_RESPONSE') {
+    // Handle response from main world
+    console.log('Main world response:', event.data.result);
+  }
+});
+```
+
+### 4. Access Page Variables and Functions
+```typescript
+// Through service worker execution
+const pageGlobals = await executeInMainWorld({
+  operation: 'getPageGlobals'
+});
+
+// Through injected bridge
+const pageFunction = (window as any).extensionBridge?.callPageFunction('jQuery', '$');
+const pageVariable = (window as any).extensionBridge?.getPageVariable('someGlobalVar');
+```
+
+## Benefits of Single Service Worker Architecture
+
+### 1. **Official Chrome Compliance**
+- Follows Chrome's recommended architecture
+- Prevents multiple service worker conflicts
+- Better performance and reliability
+
+### 2. **Clean Separation of Concerns**
+- Service worker handles communication and main world integration
+- Content scripts handle page-specific functionality
+- Clear responsibility boundaries
+
+### 3. **Better Performance**
+- Single service worker reduces memory usage
+- Content scripts can be loaded on-demand
+- Efficient message routing
+
+### 4. **Easier Maintenance**
+- Centralized communication logic
+- Clear architecture patterns
+- Easier debugging and testing
+
+### 5. **Scalability**
+- Easy to add new content scripts
+- Service worker can handle complex routing
+- Supports multiple page types and functionalities
+
+## Best Practices
+
+### 1. **Service Worker Design**
+- Keep service worker focused on communication
+- Avoid heavy processing in service worker
+- Use proper error handling and logging
+
+### 2. **Content Script Organization**
+- One content script per major functionality
+- Clear naming conventions
+- Proper TypeScript typing
+
+### 3. **Message Design**
+- Use consistent message structure
+- Include source and target information
+- Implement proper error handling
+
+### 4. **Error Handling**
+- Comprehensive error handling in all layers
+- Proper error propagation
+- User-friendly error messages
+
+### 5. **Testing Strategy**
+- Test service worker communication
+- Test content script functionality
+- Test cross-script communication
+
+## Migration from Multiple Service Workers
+
+### 1. **Consolidate Service Workers**
+- Merge all service worker logic into single file
+- Update manifest.json to use single service worker
+- Test all communication paths
+
+### 2. **Update Content Scripts**
+- Ensure all content scripts communicate through service worker
+- Update message handling logic
+- Test functionality preservation
+
+### 3. **Update Build Configuration**
+- Update Vite configuration for single service worker
+- Update content script build process
+- Test build output
+
+This architecture follows the official Chrome Extension documentation and provides a clean, maintainable, and performant solution for Chrome Extension development.
