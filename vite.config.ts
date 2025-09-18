@@ -26,13 +26,15 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        'service-worker': resolve(__dirname, 'src/background/service-worker.ts')
+        'service-worker': resolve(__dirname, 'src/background/service-worker.ts'),
+        'content-scripts/main-content-script': resolve(__dirname, 'src/content-scripts/main-content-script.ts')
       },
       output: {
         entryFileNames: '[name].js',
         chunkFileNames: '[name].js',
         assetFileNames: '[name].[ext]'
-      }
+      },
+      external: ['chrome']
     },
     outDir: 'dist',
     sourcemap: false,
@@ -40,13 +42,21 @@ export default defineConfig({
     terserOptions: {
       compress: {
         drop_console: true,
-        drop_debugger: true
+        drop_debugger: true,
+        pure_funcs: ['console.log', 'console.info', 'console.debug']
+      },
+      mangle: {
+        reserved: ['chrome']
       }
-    }
+    },
+    target: 'es2020'
   },
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src')
     }
+  },
+  define: {
+    'process.env.NODE_ENV': '"production"'
   }
 });
