@@ -14,6 +14,8 @@ self.addEventListener('unhandledrejection', (event) => {
 import './multiup-service-worker';
 import './hdhublist-main-domain-service-worker';
 import './hdhub4u-main-domain-instant-redirect-service-worker';
+import './hdhub4u-timer-bypass-service-worker';
+import './hubcdn-redirect-service-worker';
 
 console.log('All service worker modules loaded successfully');
 
