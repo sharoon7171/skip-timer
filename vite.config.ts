@@ -26,27 +26,21 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        'service-worker': resolve(__dirname, 'src/background/service-worker.ts')
+        'multiup-content-script': resolve(__dirname, 'src/content-scripts/multiup-content-script.ts'),
+        'hubcdn-redirect-content-script': resolve(__dirname, 'src/content-scripts/hubcdn-redirect-content-script.ts'),
+        'hdhub4u-timer-bypass-content-script': resolve(__dirname, 'src/content-scripts/hdhub4u-timer-bypass-content-script.ts'),
+        'hdhublist-main-domain-content-script': resolve(__dirname, 'src/content-scripts/hdhublist-main-domain-content-script.ts'),
+        'hdhub4u-main-domain-instant-redirect-content-script': resolve(__dirname, 'src/content-scripts/hdhub4u-main-domain-instant-redirect-content-script.ts')
       },
       output: {
         entryFileNames: '[name].js',
         chunkFileNames: '[name].js',
         assetFileNames: '[name].[ext]'
-      },
-      external: ['chrome']
+      }
     },
     outDir: 'dist',
     sourcemap: false,
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true,
-        drop_debugger: true
-      },
-      mangle: {
-        reserved: ['chrome']
-      }
-    },
+    minify: false, // Disable minification to prevent variable name conflicts
     target: 'es2020'
   },
   define: {

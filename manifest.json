@@ -3,12 +3,34 @@
   "name": "Link Redirect Bypass",
   "version": "1.0.0",
   "description": "Automatically bypass intermediate link services and redirect to final download pages",
-  "background": {
-    "service_worker": "service-worker.js"
-  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["multiup-content-script.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["*://hubcdn.fans/*"],
+      "js": ["hubcdn-redirect-content-script.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["*://inventoryidea.com/*", "*://taazabull24.com/*"],
+      "js": ["hdhub4u-timer-bypass-content-script.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["*://hdhublist.com/*"],
+      "js": ["hdhublist-main-domain-content-script.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["*://hdhub4u.gs/*"],
+      "js": ["hdhub4u-main-domain-instant-redirect-content-script.js"],
+      "run_at": "document_start"
+    }
+  ],
   "permissions": [
-    "webRequest",
-    "tabs",
     "scripting"
   ],
   "host_permissions": [
