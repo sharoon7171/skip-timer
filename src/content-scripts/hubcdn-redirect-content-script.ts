@@ -1,43 +1,31 @@
-// HubCDN Redirect Content Script
+// HubCDN Redirect Content Script - Simple version
+// Only execute if URL contains /dl/
 
-// TypeScript type definitions
-type LinkParam = string;
-type DecodedUrl = string;
-type MatchResult = RegExpMatchArray | null;
-
-// Pattern constant with proper typing
-const LINK_PATTERN = /\/dl\/\?link=(.+)/;
-
-// Main function with TypeScript
 (function(): void {
-  const pageUrl: string = window.location.href;
+  const url = window.location.href;
 
-  console.log('✅ HubCDN domain detected (via manifest), processing URL:', pageUrl);
+  // Only execute if URL contains /dl/
+  if (!url.includes('/dl/')) {
+    return;
+  }
 
-  // Extract link parameter with proper TypeScript
-  const extractLinkParameter = (url: string): LinkParam | null => {
-    const match: MatchResult = url.match(LINK_PATTERN);
+  console.log('✅ HubCDN /dl/ detected, processing URL:', url);
 
-    if (match && match[1]) {
-      console.log('🔗 Found link parameter:', match[1]);
-      return match[1];
-    }
+  // Extract link parameter
+  const linkMatch = url.match(/\/dl\/\?link=(.+)/);
 
-    return null;
-  };
-
-  const linkParam: LinkParam | null = extractLinkParameter(pageUrl);
-
-  // Process and redirect if link parameter found
-  if (linkParam) {
+  if (linkMatch && linkMatch[1]) {
     try {
-      const finalUrl: DecodedUrl = decodeURIComponent(linkParam);
-      console.log('🚀 Redirecting to final URL:', finalUrl);
-      window.location.href = finalUrl;
+      // Decode the real link
+      const realLink = decodeURIComponent(linkMatch[1]);
+      console.log('🚀 Redirecting to real link:', realLink);
+
+      // Redirect to the real download link
+      window.location.href = realLink;
     } catch (error) {
-      console.log('❌ Error decoding link parameter:', error);
+      console.error('❌ Error decoding link:', error);
     }
   } else {
-    console.log('❌ No HubCDN link parameter found in URL');
+    console.log('❌ No link parameter found');
   }
 })();

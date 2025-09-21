@@ -12,10 +12,9 @@ const copyManifestPlugin = () => {
     writeBundle() {
       const manifestPath = resolve(__dirname, 'manifest.json');
       const distManifestPath = resolve(__dirname, 'dist/manifest.json');
-      
+
       if (existsSync(manifestPath)) {
         copyFileSync(manifestPath, distManifestPath);
-        console.log('✅ Copied manifest.json to dist folder');
       }
     }
   };
@@ -40,10 +39,13 @@ export default defineConfig({
     },
     outDir: 'dist',
     sourcemap: false,
-    minify: false, // Disable minification to prevent variable name conflicts
-    target: 'es2020'
-  },
-  define: {
-    'process.env.NODE_ENV': '"production"'
+    minify: 'terser', // Enable minification with terser
+    target: 'es2020',
+    terserOptions: {
+      compress: {
+        drop_console: true, // Remove console logs in production
+        drop_debugger: true
+      }
+    }
   }
 });
