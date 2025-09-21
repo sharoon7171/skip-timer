@@ -33,6 +33,11 @@
       "matches": ["*://srtslug.biz/*"],
       "js": ["shrtfly-redirect-content-script.js"],
       "run_at": "document_end"
+    },
+    {
+      "matches": ["*://fc-lc.xyz/*"],
+      "js": ["fc-lc-redirect-content-script.js"],
+      "run_at": "document_end"
     }
   ],
   "permissions": [
