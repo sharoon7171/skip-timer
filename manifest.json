@@ -28,6 +28,11 @@
       "matches": ["*://hdhub4u.gs/*"],
       "js": ["hdhub4u-main-domain-instant-redirect-content-script.js"],
       "run_at": "document_start"
+    },
+    {
+      "matches": ["*://srtslug.biz/*"],
+      "js": ["shrtfly-redirect-content-script.js"],
+      "run_at": "document_end"
     }
   ],
   "permissions": [
