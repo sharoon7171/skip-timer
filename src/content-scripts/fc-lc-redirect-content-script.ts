@@ -8,27 +8,8 @@ interface RedirectScript {
     REQ_TYPES: number;
 }
 
-interface ProgressElements {
-    prog: HTMLElement | null;
-    status: HTMLElement | null;
-}
-
 (function(): void {
     function bypassRedirect(): void {
-        // Get progress elements
-        const elements: ProgressElements = {
-            prog: document.getElementById('prog'),
-            status: document.getElementById('status')
-        };
-
-        // Log current progress
-        if (elements.prog) {
-            console.log('Current progress:', elements.prog.style.width);
-        }
-        if (elements.status) {
-            console.log('Current status:', elements.status.textContent);
-        }
-
         // Extract redirect URL from script
         const scripts: NodeListOf<HTMLScriptElement> = document.querySelectorAll('script');
         let redirectUrl: string = '';
@@ -43,12 +24,8 @@ interface ProgressElements {
         });
 
         if (!redirectUrl) {
-            console.error('Redirect URL not found in scripts');
             return;
         }
-
-        console.log('Final redirect URL:', redirectUrl);
-        console.log('Bypassing redirect mechanism...');
 
         // Redirect immediately
         window.location.replace(redirectUrl);
