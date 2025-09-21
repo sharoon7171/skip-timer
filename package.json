@@ -1,7 +1,7 @@
 {
-  "name": "skip-timer",
+  "name": "countdown-bypass",
   "version": "1.0.0",
-  "description": "A minimal Chrome extension",
+  "description": "Automatically bypass countdown timers and waiting periods to provide instant access to content and download links",
   "type": "module",
   "scripts": {
     "dev": "vite",

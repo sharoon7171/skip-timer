@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Link Redirect Bypass",
+  "name": "Countdown Bypass",
   "version": "1.0.0",
-  "description": "Automatically bypass intermediate link services and redirect to final download pages",
+  "description": "Automatically bypass countdown timers and waiting periods to provide instant access to content and download links",
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
